@@ -3232,6 +3232,7 @@ dependencies = [
  "metrics-exporter-prometheus",
  "opentelemetry",
  "opentelemetry_sdk",
+ "parking_lot",
  "percent-encoding",
  "praxis-policy",
  "praxis-proxy-core",
