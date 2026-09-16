@@ -1,0 +1,119 @@
+
+=== success-1 (0-1) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/1
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Collecting 50 samples in estimated 2.0000 s (199M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Analyzing
+token_bucket/contention_success/split_atomics_locked/1
+                        time:   [10.025 ns 10.028 ns 10.032 ns]
+Found 4 outliers among 50 measurements (8.00%)
+  2 (4.00%) high mild
+  2 (4.00%) high severe
+
+
+=== success-2 (0-2) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/2
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Collecting 50 samples in estimated 2.0001 s (11M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Analyzing
+token_bucket/contention_success/split_atomics_locked/2
+                        time:   [167.70 ns 171.32 ns 175.20 ns]
+
+
+=== success-4 (0-4) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/4
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Collecting 50 samples in estimated 2.0000 s (11M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Analyzing
+token_bucket/contention_success/split_atomics_locked/4
+                        time:   [196.53 ns 218.08 ns 243.62 ns]
+Found 10 outliers among 50 measurements (20.00%)
+  1 (2.00%) high mild
+  9 (18.00%) high severe
+
+
+=== success-8 (0-8) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/8
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Collecting 50 samples in estimated 2.0004 s (4.1M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Analyzing
+token_bucket/contention_success/split_atomics_locked/8
+                        time:   [396.72 ns 441.86 ns 484.06 ns]
+Found 9 outliers among 50 measurements (18.00%)
+  9 (18.00%) low mild
+
+
+=== success-16 (0-16) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/16
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Collecting 50 samples in estimated 2.0008 s (1.6M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Analyzing
+token_bucket/contention_success/split_atomics_locked/16
+                        time:   [828.61 ns 927.18 ns 1.0124 µs]
+
+
+=== rejection-1 (0-1) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Collecting 50 samples in estimated 2.0000 s (209M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/1
+                        time:   [9.5418 ns 9.5439 ns 9.5463 ns]
+Found 1 outliers among 50 measurements (2.00%)
+  1 (2.00%) high severe
+
+
+=== rejection-2 (0-2) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Collecting 50 samples in estimated 2.0001 s (18M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/2
+                        time:   [97.435 ns 98.261 ns 99.487 ns]
+
+
+=== rejection-4 (0-4) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Collecting 50 samples in estimated 2.0002 s (8.2M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/4
+                        time:   [204.24 ns 229.66 ns 252.12 ns]
+Found 12 outliers among 50 measurements (24.00%)
+  10 (20.00%) low severe
+  1 (2.00%) high mild
+  1 (2.00%) high severe
+
+
+=== rejection-8 (0-8) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Collecting 50 samples in estimated 2.0006 s (3.7M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/8
+                        time:   [492.64 ns 512.24 ns 531.45 ns]
+Found 1 outliers among 50 measurements (2.00%)
+  1 (2.00%) high mild
+
+
+=== rejection-16 (0-16) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Collecting 50 samples in estimated 2.0011 s (1.9M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/16
+                        time:   [1.0010 µs 1.0692 µs 1.1313 µs]
+Found 4 outliers among 50 measurements (8.00%)
+  2 (4.00%) low mild
+  1 (2.00%) high mild
+  1 (2.00%) high severe\n

@@ -1,0 +1,40 @@
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/1
+Benchmarking token_bucket/contention_success/split_atomics/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/1: Collecting 30 samples in estimated 2.0000 s (68M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/1: Analyzing
+token_bucket/contention_success/split_atomics/1
+                        time:   [29.265 ns 29.286 ns 29.311 ns]
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/1
+Benchmarking token_bucket/contention_success/split_atomics/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/1: Collecting 30 samples in estimated 2.0000 s (68M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/1: Analyzing
+token_bucket/contention_success/split_atomics/1
+                        time:   [29.291 ns 29.329 ns 29.368 ns]
+Found 2 outliers among 30 measurements (6.67%)
+  2 (6.67%) high mild
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/1
+Benchmarking token_bucket/contention_success/split_atomics/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/1: Collecting 30 samples in estimated 2.0000 s (68M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/1: Analyzing
+token_bucket/contention_success/split_atomics/1
+                        time:   [29.253 ns 29.281 ns 29.332 ns]
+Found 3 outliers among 30 measurements (10.00%)
+  1 (3.33%) low mild
+  2 (6.67%) high severe
+
+
+ Performance counter stats for '/root/praxis-rate-bench/target/release/deps/token_bucket-187be60bb64c998d --bench --noplot --sample-size 30 --measurement-time 2 --warm-up-time 3 --discard-baseline --exact token_bucket/contention_success/split_atomics/1' (3 runs):
+
+         12,009.86 msec task-clock                                                              ( +-  0.02% )
+    45,754,272,944      cycles                                                                  ( +-  0.01% )
+    19,670,242,899      instructions                                                            ( +-  0.02% )
+     2,453,509,706      branches                                                                ( +-  0.01% )
+         9,894,518      branch-misses                                                           ( +-  0.11% )
+            29,378      cache-misses                                                            ( +- 12.75% )
+
+       6.010481771 +- 0.001116018 seconds time elapsed  ( +-  0.02% )\n

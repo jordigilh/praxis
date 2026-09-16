@@ -1,0 +1,114 @@
+timestamp=2026-09-15T20:21:48-04:00
+hostname=helios08.lab.eng.tlv2.redhat.com
+
+uptime
+ 20:21:48 up 14 days, 10:52, 21 users,  load average: 0.77, 1.84, 0.96
+
+lscpu
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           46 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  40
+On-line CPU(s) list:                     0-39
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Xeon(R) Gold 5218R CPU @ 2.10GHz
+CPU family:                              6
+Model:                                   85
+Thread(s) per core:                      2
+Core(s) per socket:                      20
+Socket(s):                               1
+Stepping:                                7
+BogoMIPS:                                4200.00
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts vnmi pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
+Virtualization:                          VT-x
+L1d cache:                               640 KiB (20 instances)
+L1i cache:                               640 KiB (20 instances)
+L2 cache:                                20 MiB (20 instances)
+L3 cache:                                27.5 MiB (1 instance)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-39
+Vulnerability Gather data sampling:      Mitigation; Microcode
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Mitigation; Aligned branch/return thunks
+Vulnerability Itlb multihit:             KVM: Mitigation: Split huge pages
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Mitigation; Enhanced IBRS
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Mitigation; TSX disabled
+Vulnerability Vmscape:                   Mitigation; IBPB before exit to userspace
+
+lscpu-topology
+# The following is the parsable format, which can be fed to other
+# programs. Each different item in every column has an unique ID
+# starting usually from zero.
+# CPU,Core,Socket,Node
+0,0,0,0
+1,1,0,0
+2,2,0,0
+3,3,0,0
+4,4,0,0
+5,5,0,0
+6,6,0,0
+7,7,0,0
+8,8,0,0
+9,9,0,0
+10,10,0,0
+11,11,0,0
+12,12,0,0
+13,13,0,0
+14,14,0,0
+15,15,0,0
+16,16,0,0
+17,17,0,0
+18,18,0,0
+19,19,0,0
+20,0,0,0
+21,1,0,0
+22,2,0,0
+23,3,0,0
+24,4,0,0
+25,5,0,0
+26,6,0,0
+27,7,0,0
+28,8,0,0
+29,9,0,0
+30,10,0,0
+31,11,0,0
+32,12,0,0
+33,13,0,0
+34,14,0,0
+35,15,0,0
+36,16,0,0
+37,17,0,0
+38,18,0,0
+39,19,0,0
+
+taskset
+pid 4117590's current affinity mask: ffffffffff
+
+perf
+perf version 7.2.5-100.fc43.x86_64
+
+perf_event_paranoid
+2
+
+vmstat
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st gu
+ 0  0      0 119109752   3540 137382092    0    0     5  1285 5063    2  1  0 99  0  0  0
+ 0  0      0 119109512   3540 137382096    0    0     0     0  277  161  0  0 100  0  0  0
+ 0  0      0 119110796   3540 137382096    0    0     0     0  251  162  0  0 100  0  0  0
+ 0  0      0 119111532   3540 137382096    0    0     0     0  256  107  0  0 100  0  0  0
+ 0  0      0 119115320   3540 137382096    0    0     0     0  329  209  0  0 100  0  0  0
+ 0  0      0 119115320   3540 137382096    0    0     0     0  297  121  0  0 100  0  0  0
