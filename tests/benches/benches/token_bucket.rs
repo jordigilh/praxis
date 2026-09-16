@@ -119,77 +119,6 @@ impl MutexCandidate {
     }
 }
 
-/// The pre-PR split-atomic implementation, retained as a performance baseline.
-///
-/// This is not a correctness candidate: the separate token and timestamp
-/// atomics permit the race fixed by the PR.
-struct SplitAtomicsCandidate {
-    tokens: AtomicU64,
-    last_refill: AtomicU64,
-    rate: f64,
-    burst: f64,
-}
-
-impl Candidate for SplitAtomicsCandidate {
-    fn full() -> Self {
-        Self::with_burst(BURST)
-    }
-
-    fn empty() -> Self {
-        let candidate = Self::single();
-        let _ = candidate.acquire(0);
-        candidate
-    }
-
-    fn single() -> Self {
-        Self::with_burst(1.0)
-    }
-
-    fn acquire(&self, now_nanos: u64) -> Option<f64> {
-        loop {
-            let old_tokens_bits = self.tokens.load(Ordering::Acquire);
-            let old_refill = self.last_refill.load(Ordering::Acquire);
-            let mut tokens = f64::from_bits(old_tokens_bits);
-
-            let elapsed_nanos = now_nanos.saturating_sub(old_refill);
-            if elapsed_nanos > 0 {
-                tokens = (tokens + nanos_to_secs(elapsed_nanos) * self.rate).min(self.burst);
-            }
-
-            if tokens < 1.0 {
-                return None;
-            }
-
-            let new_tokens = tokens - 1.0;
-            if self
-                .tokens
-                .compare_exchange_weak(
-                    old_tokens_bits,
-                    new_tokens.to_bits(),
-                    Ordering::AcqRel,
-                    Ordering::Acquire,
-                )
-                .is_ok()
-            {
-                self.last_refill.fetch_max(now_nanos, Ordering::Release);
-                return Some(new_tokens);
-            }
-        }
-    }
-}
-
-impl SplitAtomicsCandidate {
-    /// Construct the split-atomic baseline with a selected initial burst.
-    fn with_burst(burst: f64) -> Self {
-        Self {
-            tokens: AtomicU64::new(burst.to_bits()),
-            last_refill: AtomicU64::new(0),
-            rate: RATE,
-            burst,
-        }
-    }
-}
-
 /// A correctness-preserving split-field implementation guarded by an atomic
 /// spin lock. This measures the cost of making the two fields one logical
 /// transition without requiring a 128-bit atomic.
@@ -348,14 +277,6 @@ impl InspectableCandidate for MutexCandidate {
     }
 }
 
-impl InspectableCandidate for SplitAtomicsCandidate {
-    fn current(&self, now_nanos: u64) -> f64 {
-        let tokens = f64::from_bits(self.tokens.load(Ordering::Acquire));
-        let last_refill = self.last_refill.load(Ordering::Acquire);
-        (tokens + nanos_to_secs(now_nanos.saturating_sub(last_refill)) * self.rate).min(self.burst)
-    }
-}
-
 impl InspectableCandidate for LockedSplitAtomicsCandidate {
     fn current(&self, now_nanos: u64) -> f64 {
         self.lock();
@@ -378,25 +299,21 @@ criterion_main!(benches);
 fn bench_token_bucket(c: &mut Criterion) {
     let mut success = c.benchmark_group("token_bucket/acquire_success");
     bench_sequential::<MutexCandidate>(&mut success, "mutex", 0);
-    bench_sequential::<SplitAtomicsCandidate>(&mut success, "split_atomics", 0);
     bench_sequential::<LockedSplitAtomicsCandidate>(&mut success, "split_atomics_locked", 0);
     bench_sequential::<VirtualTimeCandidate>(&mut success, "virtual_time_gcra", 0);
     bench_sequential::<MutexCandidate>(&mut success, "mutex_refill", INTERVAL_NANOS);
-    bench_sequential::<SplitAtomicsCandidate>(&mut success, "split_atomics_refill", INTERVAL_NANOS);
     bench_sequential::<LockedSplitAtomicsCandidate>(&mut success, "split_atomics_locked_refill", INTERVAL_NANOS);
     bench_sequential::<VirtualTimeCandidate>(&mut success, "virtual_time_gcra_refill", INTERVAL_NANOS);
     success.finish();
 
     let mut rejection = c.benchmark_group("token_bucket/acquire_rejection");
     bench_rejection::<MutexCandidate>(&mut rejection, "mutex");
-    bench_rejection::<SplitAtomicsCandidate>(&mut rejection, "split_atomics");
     bench_rejection::<LockedSplitAtomicsCandidate>(&mut rejection, "split_atomics_locked");
     bench_rejection::<VirtualTimeCandidate>(&mut rejection, "virtual_time_gcra");
     rejection.finish();
 
     let mut introspection = c.benchmark_group("token_bucket/introspection");
     bench_introspection::<MutexCandidate>(&mut introspection, "mutex");
-    bench_introspection::<SplitAtomicsCandidate>(&mut introspection, "split_atomics");
     bench_introspection::<LockedSplitAtomicsCandidate>(&mut introspection, "split_atomics_locked");
     introspection.finish();
 
@@ -404,7 +321,6 @@ fn bench_token_bucket(c: &mut Criterion) {
         let mut contention = c.benchmark_group(format!("token_bucket/{group_name}"));
         for threads in [1, 2, 4, 8, 16] {
             bench_contention::<MutexCandidate>(&mut contention, "mutex", threads, rejected);
-            bench_contention::<SplitAtomicsCandidate>(&mut contention, "split_atomics", threads, rejected);
             bench_contention::<LockedSplitAtomicsCandidate>(&mut contention, "split_atomics_locked", threads, rejected);
             bench_contention::<VirtualTimeCandidate>(&mut contention, "virtual_time_gcra", threads, rejected);
         }

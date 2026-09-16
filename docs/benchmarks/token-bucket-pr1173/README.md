@@ -12,15 +12,14 @@ published as a secret [GitHub Gist](https://gist.github.com/jordigilh/5c2f230d9e
 The executable benchmark is `tests/benches/benches/token_bucket.rs`. It compares:
 
 - `mutex`: the production compound state from PR #1173.
-- `split_atomics`: the historical pre-PR baseline. It is not safe because token
-  count and refill timestamp are separate logical state updates.
 - `split_atomics_locked`: a correctness-preserving two-field variant protected
   by an atomic spin lock. It is a serialization baseline, not lock-free.
 - `virtual_time_gcra`: a single-atomic theoretical-arrival/GCRA alternative.
   It changes the state and introspection semantics and is not production code.
 
-The current suite has 55 cases. The original three-round report covered 41 cases;
-the 14 additional cases are the locked split-field retry.
+The current suite has 41 cases. It excludes the historical unsafe split-atomic
+implementation from runnable comparisons. Its old logs remain in `results/`
+only as provenance for why that option was rejected.
 
 ## Method
 
@@ -83,7 +82,9 @@ The only warning was the existing unfulfilled lint expectation in
 ## Raw Outputs
 
 - `results/token_bucket-final-*.log`: original three 41-case runs.
-- `results/token-bucket-corrected-pinned-r*.log`: corrected three-round runs.
+- `results/token-bucket-corrected-pinned-r*.log`: corrected three-round runs;
+  historical unsafe split results are archived in these mixed-candidate logs but
+  are excluded from current comparisons.
 - `results/token-bucket-corrected-pinned-spike.log`: exploratory corrected run.
 - `results/preflight-corrected-pinned.txt`: host and workload preflight.
 - `results/perf-*.log`: hardware-counter runs.

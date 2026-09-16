@@ -33,7 +33,7 @@ Location: `tests/benches/benches/`
 | `config_parsing` | YAML config deserialization at varying complexity |
 | `load_balancer` | Round-robin, least-connections, consistent-hash with varying upstreams |
 | `headers` | Request/response header injection (1/5/20 headers) |
-| `token_bucket` | Mutex, split-atomic, and virtual-time rate-limit state under sequential and concurrent load |
+| `token_bucket` | Mutex, locked split-field, and virtual-time rate-limit state under sequential and concurrent load |
 
 Run all microbenchmarks:
 
@@ -48,15 +48,17 @@ cargo bench -p praxis-tests-benches --bench token_bucket
 ```
 
 The `token_bucket` suite compares the mutex implementation from PR #1173
-with the pre-PR split-atomic implementation and a single-atomic
-virtual-time/GCRA candidate. It also includes `split_atomics_locked`, a
+with `split_atomics_locked`, a
 correctness-preserving split-field implementation guarded by an atomic spin
 lock; this measures serialization overhead, not a lock-free design. The
-split-atomic result is a historical performance baseline only because it
-retains the race fixed by the PR. The virtual-time candidate is intentionally
-measured as an algorithmic alternative: it does not preserve exact
+virtual-time/GCRA candidate is intentionally measured as an algorithmic
+alternative: it does not preserve exact
 fractional-token behavior or the `current_tokens()`/`last_refill_nanos()`
 introspection contract.
+
+Historical split-atomic logs from the PR investigation are archived with the
+benchmark artifacts, but the unsafe implementation is not part of the runnable
+suite or the decision tables.
 
 Run a single suite:
 
