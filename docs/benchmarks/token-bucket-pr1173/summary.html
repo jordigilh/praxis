@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR #1173 Token-Bucket Benchmark Summary</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5c6873;
+      --line: #d9e0e6;
+      --surface: #f5f7f9;
+      --white: #ffffff;
+      --green: #176b45;
+      --green-bg: #eaf6ef;
+      --amber: #875b00;
+      --amber-bg: #fff7df;
+      --blue: #155b91;
+      --blue-bg: #eaf4fb;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 40px 24px 64px; }
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 12px; }
+    h1 { font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.03em; }
+    h2 { font-size: 25px; margin-top: 42px; }
+    h3 { font-size: 18px; margin-top: 24px; }
+    p { margin: 8px 0 14px; }
+    a { color: var(--blue); }
+    code {
+      background: #edf0f2;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .lede { max-width: 850px; color: var(--muted); font-size: 18px; }
+    .meta { color: var(--muted); font-size: 14px; }
+    .callout {
+      border-left: 4px solid var(--green);
+      background: var(--green-bg);
+      margin: 24px 0;
+      padding: 16px 18px;
+    }
+    .callout.warning { border-left-color: var(--amber); background: var(--amber-bg); }
+    .callout.info { border-left-color: var(--blue); background: var(--blue-bg); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 28px 0;
+    }
+    .stat {
+      background: var(--white);
+      border: 1px solid var(--line);
+      padding: 16px;
+    }
+    .stat strong { display: block; font-size: 25px; line-height: 1.1; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .section { background: var(--white); border: 1px solid var(--line); padding: 20px; margin-top: 18px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 680px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: #eef1f3; font-size: 13px; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    .good { color: var(--green); font-weight: 650; }
+    .bad { color: var(--amber); font-weight: 650; }
+    .note { color: var(--muted); font-size: 14px; }
+    .columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    ul { margin: 8px 0 14px; padding-left: 22px; }
+    li { margin: 5px 0; }
+    pre {
+      overflow-x: auto;
+      background: #202830;
+      color: #f3f6f8;
+      padding: 16px;
+      border-radius: 4px;
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; margin-top: 42px; padding-top: 16px; }
+    @media (max-width: 760px) {
+      main { padding: 28px 14px 48px; }
+      .stats, .columns { grid-template-columns: 1fr 1fr; }
+      .section { padding: 14px; }
+    }
+    @media (max-width: 460px) {
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>PR #1173 Token-Bucket Benchmark Summary</h1>
+      <p class="lede">
+        Correctness-preserving token-bucket state management versus three alternative
+        designs. The evidence supports keeping the mutex implementation for the PR;
+        the alternatives expose useful tradeoffs, but none is a free replacement.
+      </p>
+      <p class="meta">
+        Generated September 15, 2026 from helios08 measurements.
+        <a href="https://github.com/praxis-proxy/praxis/pull/1173">PR #1173</a>
+      </p>
+    </header>
+
+    <div class="stats">
+      <div class="stat"><strong>55</strong><span>Current Criterion benchmark cases</span></div>
+      <div class="stat"><strong>3</strong><span>Locked-split retry rounds</span></div>
+      <div class="stat"><strong>96/100</strong><span>Relative PR conclusion confidence</span></div>
+      <div class="stat"><strong>70/100</strong><span>Portable absolute-time confidence</span></div>
+    </div>
+
+    <div class="callout">
+      <strong>Recommendation: keep the mutex compound-state implementation.</strong>
+      It fixes the race by updating the token count and refill timestamp as one logical
+      transition, preserves the existing API, and is fastest in the simple and low-
+      contention paths. High-contention throughput should be addressed with a
+      correctness-preserving design such as sharding or striped buckets.
+    </div>
+
+    <h2>Implementations</h2>
+    <div class="columns">
+      <section class="section">
+        <h3>Mutex compound state</h3>
+        <p>
+          The production implementation stores <code>{ tokens: f64, last_refill: u64 }</code>
+          behind <code>parking_lot::Mutex</code>. Refill, admission, decrement, and
+          timestamp update happen under one lock.
+        </p>
+        <p><strong>Pros:</strong></p>
+        <ul>
+          <li>Preserves exact fractional-token and introspection behavior.</li>
+          <li>Simple linearizable transition with blocking waiters.</li>
+          <li>Fastest measured option in the simple and low-contention paths.</li>
+        </ul>
+        <p class="bad"><strong>Cons:</strong> serializes a hot bucket under high contention.</p>
+      </section>
+      <section class="section">
+        <h3>Split atomics</h3>
+        <p>
+          The historical implementation stores tokens and the timestamp in separate
+          atomics. Its token CAS does not include the timestamp, so the compound state
+          is not updated atomically.
+        </p>
+        <p><strong>Pros:</strong> low-cost 64-bit atomics and excellent apparent contention throughput.</p>
+        <p class="bad"><strong>Cons:</strong> the token/timestamp transition is not atomic, so the implementation can over-admit requests. Performance baseline only.</p>
+      </section>
+      <section class="section">
+        <h3>Locked split fields</h3>
+        <p>
+          Two atomic fields protected by an atomic spin lock. This restores correctness
+          without requiring a 128-bit atomic, but it serializes the same logical update.
+        </p>
+        <p><strong>Pros:</strong> preserves the current state representation and is correct without double-width atomics.</p>
+        <p class="bad"><strong>Cons:</strong> spinning burns CPU, can starve, and loses the apparent split-atomic advantage under contention.</p>
+      </section>
+      <section class="section">
+        <h3>Virtual time / GCRA</h3>
+        <p>
+          A single atomic theoretical-arrival timestamp represents admission debt and
+          burst tolerance. It avoids the split-state race, but changes how bucket state
+          is represented and observed.
+        </p>
+        <p><strong>Pros:</strong> one atomic schedule value, cheap rejection, and strong high-contention results.</p>
+        <p class="bad"><strong>Cons:</strong> changes fractional-token and introspection semantics; algorithmic alternative, not integrated into production.</p>
+      </section>
+    </div>
+
+    <h2>Core Operation Cost</h2>
+    <section class="section">
+      <p class="note">Median of three final Criterion runs; wall-clock time per operation.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Workload</th><th>Mutex</th><th>Split atomics</th><th>Virtual time/GCRA</th></tr></thead>
+          <tbody>
+            <tr><td>Success, fixed clock</td><td>13.822 ns</td><td>14.340 ns</td><td class="good">10.584 ns</td></tr>
+            <tr><td>Success, refill clock</td><td class="good">14.328 ns</td><td>29.800 ns</td><td>10.584 ns</td></tr>
+            <tr><td>Rejection</td><td>13.063 ns</td><td>2.511 ns</td><td class="good">2.273 ns</td></tr>
+            <tr><td>Introspection</td><td>12.308 ns</td><td>11.058 ns</td><td>Not equivalent</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h2>Corrected Pinned Contention</h2>
+    <section class="section">
+      <p>
+        Three independent higher-sample rounds used synchronized worker starts,
+        setup and joins outside the measured interval, 50 samples, 3 second warmup,
+        2 second measurement, and process affinity on physical CPU ranges 0 through N
+        plus one coordinating core. Values in parentheses are the minimum and maximum
+        run medians.
+      </p>
+      <h3>Successful acquisitions</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Workers</th><th>Mutex</th><th>Split atomics</th><th>Locked split fields</th><th>Virtual time/GCRA</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>14.515 ns (14.510-14.519)</td><td>29.351 ns (29.173-29.381)</td><td>10.028 ns (10.012-10.028)</td><td class="good">10.814 ns (10.750-10.830)</td></tr>
+            <tr><td>2</td><td>30.760 ns (28.069-32.225)</td><td>137.210 ns (120.250-144.830)</td><td>171.320 ns (136.440-180.100)</td><td class="good">74.811 ns (71.987-76.254)</td></tr>
+            <tr><td>4</td><td>79.599 ns (79.165-81.312)</td><td>171.280 ns (168.720-171.700)</td><td>201.980 ns (182.780-218.080)</td><td class="good">128.850 ns (128.130-129.770)</td></tr>
+            <tr><td>8</td><td>239.820 ns (239.660-242.530)</td><td class="good">207.100 ns (205.500-207.880)</td><td>441.860 ns (413.940-510.750)</td><td>233.670 ns (222.050-235.620)</td></tr>
+            <tr><td>16</td><td>817.370 ns (814.240-819.340)</td><td class="good">318.540 ns (318.090-319.320)</td><td>855.690 ns (852.260-927.180)</td><td>357.140 ns (339.330-383.630)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Rejected acquisitions</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Workers</th><th>Mutex</th><th>Split atomics</th><th>Locked split fields</th><th>Virtual time/GCRA</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>14.698 ns</td><td>6.612 ns</td><td>10.482 ns</td><td class="good">3.173 ns</td></tr>
+            <tr><td>2</td><td>36.173 ns</td><td>3.331 ns</td><td>122.310 ns</td><td class="good">1.598 ns</td></tr>
+            <tr><td>4</td><td>94.438 ns</td><td>1.699 ns</td><td>249.820 ns</td><td class="good">0.815 ns</td></tr>
+            <tr><td>8</td><td>244.650 ns</td><td>0.899 ns</td><td>519.250 ns</td><td class="good">0.431 ns</td></tr>
+            <tr><td>16</td><td>798.490 ns</td><td>0.556 ns</td><td>1,039.6 ns</td><td class="good">0.264 ns</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        The historical split-atomic and virtual-time rejection paths remain highly
+        parallel because rejected requests do not mutate state. The locked split path
+        must acquire its spin lock even for rejection, so its contention cost rises.
+      </p>
+    </section>
+
+    <h2>Telemetry Validation</h2>
+    <section class="section">
+      <p>
+        A representative success pass wrapped the historical candidates at 1, 8, and 16 workers
+        with turbostat. The ordering matched the corrected three-round dataset. Compared
+        with the corresponding corrected medians, the single-pass medians differed by
+        -5.9% to +13.1%; no ordering changed.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Candidate / workers</th><th>Criterion median (range)</th><th>Bzy_MHz</th><th>TSC_MHz</th><th>System Busy%</th><th>%steal</th></tr></thead>
+          <tbody>
+            <tr><td>Mutex / 1</td><td>14.464 ns (14.449-14.482)</td><td>3,800</td><td>2,095</td><td>5.02%</td><td>0%</td></tr>
+            <tr><td>Split atomics / 1</td><td>29.330 ns (29.316-29.356)</td><td>3,770</td><td>2,095</td><td>5.04%</td><td>0%</td></tr>
+            <tr><td>Virtual time/GCRA / 1</td><td>10.847 ns (10.841-10.855)</td><td>3,758</td><td>2,095</td><td>5.06%</td><td>0%</td></tr>
+            <tr><td>Mutex / 8</td><td>271.150 ns (263.960-278.170)</td><td>3,481</td><td>2,096</td><td>22.03%</td><td>0%</td></tr>
+            <tr><td>Split atomics / 8</td><td>210.540 ns (207.470-213.070)</td><td>3,481</td><td>2,095</td><td>22.45%</td><td>0%</td></tr>
+            <tr><td>Virtual time/GCRA / 8</td><td>219.920 ns (194.900-248.320)</td><td>3,469</td><td>2,095</td><td>21.79%</td><td>0%</td></tr>
+            <tr><td>Mutex / 16</td><td>828.750 ns (818.460-837.700)</td><td>2,875</td><td>2,096</td><td>21.91%</td><td>0%</td></tr>
+            <tr><td>Split atomics / 16</td><td>320.060 ns (315.550-324.360)</td><td>2,891</td><td>2,096</td><td>42.29%</td><td>0%</td></tr>
+            <tr><td>Virtual time/GCRA / 16</td><td>351.570 ns (332.900-381.800)</td><td>2,897</td><td>2,096</td><td>41.20%</td><td>0%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        Host: Intel Xeon Gold 5218R, Fedora 43, 20 physical cores / 40 logical CPUs,
+        one socket and one NUMA node. <code>numactl --hardware</code> reported about
+        257 GB RAM. The VM exposes no cpufreq driver or governor policy, so Bzy_MHz is
+        observed rather than controlled. The samples showed zero steal time, no thermal
+        throttling, and core temperatures of 40-47 C.
+      </p>
+      <p class="note">
+        The locked split retry used the same host and process-affinity scheme but was
+        not separately wrapped with turbostat; its contention results are in the next
+        section and raw logs are under
+        <code>/root/praxis-rate-bench/results/split-locked-corrected/</code>.
+      </p>
+    </section>
+
+    <h2>Why Split Atomics Are Unsafe</h2>
+    <div class="callout warning">
+      The token CAS does not include <code>last_refill</code>. For example, with one
+      token, a burst of at least two, and one token refilled by 100 ms, two threads can
+      both read the same state, calculate <code>tokens = 2</code>, and successfully CAS
+      <code>1 -&gt; 1</code>. A third request at the same timestamp can then also succeed.
+      The mutex prevents this by making the refill and decrement one operation.
+    </div>
+
+    <h2>Correctness-Restored Split Retry</h2>
+    <section class="section">
+      <p>
+        The retry added an atomic spin lock around the two split fields. It passed the
+        remote benchmark checks and three independent contention rounds, but it did not
+        retain the historical split-atomic advantage. At 16 workers, successful
+        acquisition was <code>855.690 ns</code> versus <code>817.370 ns</code> for the
+        mutex; rejected acquisition was <code>1,039.6 ns</code> versus
+        <code>798.490 ns</code>. The result is correct, but the synchronization cost is
+        now visible.
+      </p>
+      <p class="note">
+        This is a valid correctness-preserving option, not a lock-free option. A packed
+        128-bit CAS would be a separate design with different portability and retry costs.
+      </p>
+    </section>
+
+    <h2>Virtual Time Tradeoffs</h2>
+    <div class="columns">
+      <section class="section">
+        <h3>Advantages</h3>
+        <ul>
+          <li>One atomic state value and no split token/timestamp race.</li>
+          <li>Very cheap rejection path because rejected requests do not write state.</li>
+          <li>Better successful-path contention results than the mutex in this benchmark at 8 and 16 workers.</li>
+          <li>Common algorithmic family used by governor and Envoy.</li>
+        </ul>
+      </section>
+      <section class="section">
+        <h3>Costs</h3>
+        <ul>
+          <li>Replaces explicit fractional tokens with an implicit scheduling debt.</li>
+          <li>Does not directly preserve <code>current_tokens()</code> or <code>last_refill_nanos()</code>.</li>
+          <li>Requires validation for rate conversion, burst rounding, timestamp boundaries, and clock rollback.</li>
+          <li>Not a drop-in production implementation; only the benchmark candidate has been tested.</li>
+        </ul>
+      </section>
+    </div>
+
+    <h2>What About 128-bit CAS?</h2>
+    <section class="section">
+      <p>
+        Packing the existing <code>f64</code> token bits and <code>u64</code> timestamp
+        into one 128-bit CAS word could preserve current semantics. However, native
+        128-bit atomic support is architecture- and CPU-dependent. A portable fallback
+        may use locks, and under contention CAS retries can be worse than parking on a
+        mutex. It would require a separate prototype, target support policy, stress
+        tests, and benchmark validation before replacing the mutex.
+      </p>
+    </section>
+
+    <h2>Reproduction</h2>
+    <section class="section">
+      <pre>cargo bench -p praxis-tests-benches --bench token_bucket
+
+# Corrected pinned case on helios08
+taskset -c 0-16 token_bucket-bench --bench --noplot \
+  --sample-size 50 --measurement-time 2 --warm-up-time 3 \
+  --discard-baseline --exact token_bucket/contention_success/mutex/16
+
+# Telemetry wrapper
+turbostat --quiet --interval 1 --num_iterations 5 -- \
+  taskset -c 0-16 token_bucket-bench --bench --noplot \
+  --sample-size 30 --measurement-time 2 --warm-up-time 3 \
+  --discard-baseline --exact token_bucket/contention_success/mutex/16</pre>
+      <p class="note">
+        Corrected benchmark source: <code>tests/benches/benches/token_bucket.rs</code>.
+        Raw telemetry logs: <code>/root/praxis-rate-bench/results/telemetry-corrected/</code>;
+        locked retry logs: <code>/root/praxis-rate-bench/results/split-locked-corrected/</code>.
+        Remote <code>cargo check --benches</code> and <code>cargo test --benches</code>
+        passed. No production token-bucket code was modified for the benchmark work.
+      </p>
+    </section>
+
+    <footer>
+      This summary intentionally separates correctness conclusions from performance
+      baselines. Absolute nanoseconds are specific to the measured VM and should not be
+      presented as portable hardware constants.
+    </footer>
+  </main>
+</body>
+</html>

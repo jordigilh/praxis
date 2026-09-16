@@ -3336,6 +3336,7 @@ version = "0.5.5"
 dependencies = [
  "criterion",
  "http",
+ "parking_lot",
  "praxis-proxy-core",
  "praxis-proxy-filter",
  "tokio",

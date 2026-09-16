@@ -1,0 +1,43 @@
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Collecting 30 samples in estimated 2.0001 s (6.0M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Analyzing
+token_bucket/contention_success/virtual_time_gcra/16
+                        time:   [333.79 ns 354.61 ns 386.13 ns]
+Found 7 outliers among 30 measurements (23.33%)
+  2 (6.67%) low mild
+  5 (16.67%) high severe
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Collecting 30 samples in estimated 2.0000 s (5.3M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Analyzing
+token_bucket/contention_success/virtual_time_gcra/16
+                        time:   [329.53 ns 343.27 ns 366.81 ns]
+Found 6 outliers among 30 measurements (20.00%)
+  3 (10.00%) low mild
+  3 (10.00%) high severe
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Collecting 30 samples in estimated 2.0001 s (5.2M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Analyzing
+token_bucket/contention_success/virtual_time_gcra/16
+                        time:   [335.08 ns 368.28 ns 408.68 ns]
+Found 5 outliers among 30 measurements (16.67%)
+  5 (16.67%) high severe
+
+
+ Performance counter stats for '/root/praxis-rate-bench/target/release/deps/token_bucket-187be60bb64c998d --bench --noplot --sample-size 30 --measurement-time 2 --warm-up-time 3 --discard-baseline --exact token_bucket/contention_success/virtual_time_gcra/16' (3 runs):
+
+         99,085.11 msec task-clock                                                              ( +- 15.15% )
+   286,313,920,163      cycles                                                                  ( +- 15.11% )
+     5,069,806,728      instructions                                                            ( +- 12.39% )
+       909,105,400      branches                                                                ( +- 12.30% )
+        29,291,927      branch-misses                                                           ( +- 11.19% )
+           278,455      cache-misses                                                            ( +-  3.13% )
+
+       6.002500317 +- 0.898838822 seconds time elapsed  ( +- 14.97% )\n

@@ -1,0 +1,367 @@
+round=2 timestamp=2026-09-15T19:14:01-04:00
+
+=== contention_success/split_atomics/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/1
+Benchmarking token_bucket/contention_success/split_atomics/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/1: Collecting 50 samples in estimated 2.0000 s (68M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/1: Analyzing
+token_bucket/contention_success/split_atomics/1
+                        time:   [29.361 ns 29.381 ns 29.407 ns]
+Found 4 outliers among 50 measurements (8.00%)
+  1 (2.00%) high mild
+  3 (6.00%) high severe
+
+
+=== contention_success/mutex/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/mutex/1
+Benchmarking token_bucket/contention_success/mutex/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/mutex/1: Collecting 50 samples in estimated 2.0000 s (138M iterations)
+Benchmarking token_bucket/contention_success/mutex/1: Analyzing
+token_bucket/contention_success/mutex/1
+                        time:   [14.509 ns 14.515 ns 14.523 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  1 (2.00%) high mild
+  1 (2.00%) high severe
+
+
+=== contention_success/virtual_time_gcra/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/1
+Benchmarking token_bucket/contention_success/virtual_time_gcra/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/1: Collecting 50 samples in estimated 2.0000 s (185M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/1: Analyzing
+token_bucket/contention_success/virtual_time_gcra/1
+                        time:   [10.824 ns 10.830 ns 10.837 ns]
+Found 6 outliers among 50 measurements (12.00%)
+  1 (2.00%) low severe
+  1 (2.00%) low mild
+  2 (4.00%) high mild
+  2 (4.00%) high severe
+
+
+=== contention_success/split_atomics/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/2
+Benchmarking token_bucket/contention_success/split_atomics/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/2: Collecting 50 samples in estimated 2.0000 s (14M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/2: Analyzing
+token_bucket/contention_success/split_atomics/2
+                        time:   [144.71 ns 144.83 ns 144.95 ns]
+Found 3 outliers among 50 measurements (6.00%)
+  2 (4.00%) low severe
+  1 (2.00%) high severe
+
+
+=== contention_success/mutex/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/mutex/2
+Benchmarking token_bucket/contention_success/mutex/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/mutex/2: Collecting 50 samples in estimated 2.0000 s (67M iterations)
+Benchmarking token_bucket/contention_success/mutex/2: Analyzing
+token_bucket/contention_success/mutex/2
+                        time:   [27.792 ns 28.069 ns 28.365 ns]
+Found 9 outliers among 50 measurements (18.00%)
+  9 (18.00%) high severe
+
+
+=== contention_success/virtual_time_gcra/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/2
+Benchmarking token_bucket/contention_success/virtual_time_gcra/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/2: Collecting 50 samples in estimated 2.0001 s (27M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/2: Analyzing
+token_bucket/contention_success/virtual_time_gcra/2
+                        time:   [74.572 ns 74.811 ns 75.054 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  2 (4.00%) low mild
+
+
+=== contention_success/split_atomics/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/4
+Benchmarking token_bucket/contention_success/split_atomics/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/4: Collecting 50 samples in estimated 2.0001 s (12M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/4: Analyzing
+token_bucket/contention_success/split_atomics/4
+                        time:   [166.79 ns 168.72 ns 170.69 ns]
+
+
+=== contention_success/mutex/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/mutex/4
+Benchmarking token_bucket/contention_success/mutex/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/mutex/4: Collecting 50 samples in estimated 2.0001 s (27M iterations)
+Benchmarking token_bucket/contention_success/mutex/4: Analyzing
+token_bucket/contention_success/mutex/4
+                        time:   [75.968 ns 79.599 ns 83.215 ns]
+
+
+=== contention_success/virtual_time_gcra/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/4
+Benchmarking token_bucket/contention_success/virtual_time_gcra/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/4: Collecting 50 samples in estimated 2.0000 s (17M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/4: Analyzing
+token_bucket/contention_success/virtual_time_gcra/4
+                        time:   [120.44 ns 129.77 ns 141.14 ns]
+Found 11 outliers among 50 measurements (22.00%)
+  11 (22.00%) high severe
+
+
+=== contention_success/split_atomics/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/8
+Benchmarking token_bucket/contention_success/split_atomics/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/8: Collecting 50 samples in estimated 2.0000 s (9.6M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/8: Analyzing
+token_bucket/contention_success/split_atomics/8
+                        time:   [204.14 ns 207.10 ns 209.83 ns]
+
+
+=== contention_success/mutex/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/mutex/8
+Benchmarking token_bucket/contention_success/mutex/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/mutex/8: Collecting 50 samples in estimated 2.0003 s (8.0M iterations)
+Benchmarking token_bucket/contention_success/mutex/8: Analyzing
+token_bucket/contention_success/mutex/8
+                        time:   [234.75 ns 239.66 ns 245.17 ns]
+Found 4 outliers among 50 measurements (8.00%)
+  4 (8.00%) high mild
+
+
+=== contention_success/virtual_time_gcra/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/8
+Benchmarking token_bucket/contention_success/virtual_time_gcra/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/8: Collecting 50 samples in estimated 2.0003 s (7.8M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/8: Analyzing
+token_bucket/contention_success/virtual_time_gcra/8
+                        time:   [213.46 ns 235.62 ns 258.46 ns]
+
+
+=== contention_success/split_atomics/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics/16
+Benchmarking token_bucket/contention_success/split_atomics/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics/16: Collecting 50 samples in estimated 2.0000 s (6.2M iterations)
+Benchmarking token_bucket/contention_success/split_atomics/16: Analyzing
+token_bucket/contention_success/split_atomics/16
+                        time:   [313.96 ns 318.09 ns 322.06 ns]
+
+
+=== contention_success/mutex/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/mutex/16
+Benchmarking token_bucket/contention_success/mutex/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/mutex/16: Collecting 50 samples in estimated 2.0001 s (2.5M iterations)
+Benchmarking token_bucket/contention_success/mutex/16: Analyzing
+token_bucket/contention_success/mutex/16
+                        time:   [808.62 ns 817.37 ns 825.75 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  1 (2.00%) low mild
+  1 (2.00%) high mild
+
+
+=== contention_success/virtual_time_gcra/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Collecting 50 samples in estimated 2.0002 s (6.0M iterations)
+Benchmarking token_bucket/contention_success/virtual_time_gcra/16: Analyzing
+token_bucket/contention_success/virtual_time_gcra/16
+                        time:   [330.07 ns 339.33 ns 352.28 ns]
+Found 8 outliers among 50 measurements (16.00%)
+  1 (2.00%) low mild
+  1 (2.00%) high mild
+  6 (12.00%) high severe
+
+
+=== contention_rejection/split_atomics/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics/1
+Benchmarking token_bucket/contention_rejection/split_atomics/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics/1: Collecting 50 samples in estimated 2.0000 s (302M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics/1: Analyzing
+token_bucket/contention_rejection/split_atomics/1
+                        time:   [6.6084 ns 6.6137 ns 6.6180 ns]
+Found 7 outliers among 50 measurements (14.00%)
+  2 (4.00%) low severe
+  3 (6.00%) high mild
+  2 (4.00%) high severe
+
+
+=== contention_rejection/mutex/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/mutex/1
+Benchmarking token_bucket/contention_rejection/mutex/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/mutex/1: Collecting 50 samples in estimated 2.0000 s (136M iterations)
+Benchmarking token_bucket/contention_rejection/mutex/1: Analyzing
+token_bucket/contention_rejection/mutex/1
+                        time:   [14.714 ns 14.720 ns 14.729 ns]
+Found 3 outliers among 50 measurements (6.00%)
+  3 (6.00%) high severe
+
+
+=== contention_rejection/virtual_time_gcra/1 affinity=0-1 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/1
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/1: Collecting 50 samples in estimated 2.0000 s (630M iterations)
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/1: Analyzing
+token_bucket/contention_rejection/virtual_time_gcra/1
+                        time:   [3.1734 ns 3.1742 ns 3.1752 ns]
+Found 3 outliers among 50 measurements (6.00%)
+  3 (6.00%) high mild
+
+
+=== contention_rejection/split_atomics/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics/2
+Benchmarking token_bucket/contention_rejection/split_atomics/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics/2: Collecting 50 samples in estimated 2.0000 s (601M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics/2: Analyzing
+token_bucket/contention_rejection/split_atomics/2
+                        time:   [3.3281 ns 3.3322 ns 3.3389 ns]
+Found 1 outliers among 50 measurements (2.00%)
+  1 (2.00%) high mild
+
+
+=== contention_rejection/mutex/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/mutex/2
+Benchmarking token_bucket/contention_rejection/mutex/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/mutex/2: Collecting 50 samples in estimated 2.0000 s (53M iterations)
+Benchmarking token_bucket/contention_rejection/mutex/2: Analyzing
+token_bucket/contention_rejection/mutex/2
+                        time:   [39.291 ns 39.390 ns 39.499 ns]
+Found 6 outliers among 50 measurements (12.00%)
+  3 (6.00%) high mild
+  3 (6.00%) high severe
+
+
+=== contention_rejection/virtual_time_gcra/2 affinity=0-2 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/2
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/2: Collecting 50 samples in estimated 2.0000 s (1.3B iterations)
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/2: Analyzing
+token_bucket/contention_rejection/virtual_time_gcra/2
+                        time:   [1.5975 ns 1.5986 ns 1.6001 ns]
+
+
+=== contention_rejection/split_atomics/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics/4
+Benchmarking token_bucket/contention_rejection/split_atomics/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics/4: Collecting 50 samples in estimated 2.0000 s (1.2B iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics/4: Analyzing
+token_bucket/contention_rejection/split_atomics/4
+                        time:   [1.6983 ns 1.6985 ns 1.6988 ns]
+Found 6 outliers among 50 measurements (12.00%)
+  4 (8.00%) high mild
+  2 (4.00%) high severe
+
+
+=== contention_rejection/mutex/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/mutex/4
+Benchmarking token_bucket/contention_rejection/mutex/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/mutex/4: Collecting 50 samples in estimated 2.0000 s (23M iterations)
+Benchmarking token_bucket/contention_rejection/mutex/4: Analyzing
+token_bucket/contention_rejection/mutex/4
+                        time:   [87.574 ns 88.265 ns 88.984 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  2 (4.00%) low mild
+
+
+=== contention_rejection/virtual_time_gcra/4 affinity=0-4 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/4
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/4: Collecting 50 samples in estimated 2.0000 s (2.5B iterations)
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/4: Analyzing
+token_bucket/contention_rejection/virtual_time_gcra/4
+                        time:   [814.52 ps 814.82 ps 815.44 ps]
+Found 6 outliers among 50 measurements (12.00%)
+  3 (6.00%) high mild
+  3 (6.00%) high severe
+
+
+=== contention_rejection/split_atomics/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics/8
+Benchmarking token_bucket/contention_rejection/split_atomics/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics/8: Collecting 50 samples in estimated 2.0000 s (2.2B iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics/8: Analyzing
+token_bucket/contention_rejection/split_atomics/8
+                        time:   [898.18 ps 898.31 ps 898.47 ps]
+Found 5 outliers among 50 measurements (10.00%)
+  2 (4.00%) high mild
+  3 (6.00%) high severe
+
+
+=== contention_rejection/mutex/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/mutex/8
+Benchmarking token_bucket/contention_rejection/mutex/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/mutex/8: Collecting 50 samples in estimated 2.0003 s (8.3M iterations)
+Benchmarking token_bucket/contention_rejection/mutex/8: Analyzing
+token_bucket/contention_rejection/mutex/8
+                        time:   [242.02 ns 246.72 ns 252.57 ns]
+Found 8 outliers among 50 measurements (16.00%)
+  3 (6.00%) low mild
+  5 (10.00%) high severe
+
+
+=== contention_rejection/virtual_time_gcra/8 affinity=0-8 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/8
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/8: Collecting 50 samples in estimated 2.0000 s (4.6B iterations)
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/8: Analyzing
+token_bucket/contention_rejection/virtual_time_gcra/8
+                        time:   [430.84 ps 441.76 ps 459.89 ps]
+Found 7 outliers among 50 measurements (14.00%)
+  4 (8.00%) high mild
+  3 (6.00%) high severe
+
+
+=== contention_rejection/split_atomics/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics/16
+Benchmarking token_bucket/contention_rejection/split_atomics/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics/16: Collecting 50 samples in estimated 2.0000 s (3.7B iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics/16: Analyzing
+token_bucket/contention_rejection/split_atomics/16
+                        time:   [543.14 ps 555.25 ps 574.49 ps]
+Found 9 outliers among 50 measurements (18.00%)
+  1 (2.00%) high mild
+  8 (16.00%) high severe
+
+
+=== contention_rejection/mutex/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/mutex/16
+Benchmarking token_bucket/contention_rejection/mutex/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/mutex/16: Collecting 50 samples in estimated 2.0008 s (2.5M iterations)
+Benchmarking token_bucket/contention_rejection/mutex/16: Analyzing
+token_bucket/contention_rejection/mutex/16
+                        time:   [794.22 ns 798.49 ns 802.81 ns]
+Found 4 outliers among 50 measurements (8.00%)
+  1 (2.00%) low mild
+  3 (6.00%) high mild
+
+
+=== contention_rejection/virtual_time_gcra/16 affinity=0-16 ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/16
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/16: Collecting 50 samples in estimated 2.0000 s (7.7B iterations)
+Benchmarking token_bucket/contention_rejection/virtual_time_gcra/16: Analyzing
+token_bucket/contention_rejection/virtual_time_gcra/16
+                        time:   [261.41 ps 264.08 ps 268.07 ps]
+Found 7 outliers among 50 measurements (14.00%)
+  7 (14.00%) high severe\n

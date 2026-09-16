@@ -1,0 +1,42 @@
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/virtual_time_gcra
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Collecting 20 samples in estimated 1.0000 s (94M iterations)
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Analyzing
+token_bucket/acquire_success/virtual_time_gcra
+                        time:   [10.570 ns 10.574 ns 10.578 ns]
+Found 3 outliers among 20 measurements (15.00%)
+  3 (15.00%) high mild
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/virtual_time_gcra
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Collecting 20 samples in estimated 1.0000 s (94M iterations)
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Analyzing
+token_bucket/acquire_success/virtual_time_gcra
+                        time:   [10.571 ns 10.577 ns 10.585 ns]
+Found 1 outliers among 20 measurements (5.00%)
+  1 (5.00%) high mild
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/virtual_time_gcra
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Collecting 20 samples in estimated 1.0000 s (94M iterations)
+Benchmarking token_bucket/acquire_success/virtual_time_gcra: Analyzing
+token_bucket/acquire_success/virtual_time_gcra
+                        time:   [10.572 ns 10.583 ns 10.597 ns]
+Found 4 outliers among 20 measurements (20.00%)
+  1 (5.00%) high mild
+  3 (15.00%) high severe
+
+
+ Performance counter stats for '/root/praxis-rate-bench/target/release/deps/token_bucket-e61832f011ce306a --bench --noplot --sample-size 20 --measurement-time 1 --discard-baseline --exact token_bucket/acquire_success/virtual_time_gcra' (3 runs):
+
+          7,371.17 msec task-clock                                                              ( +-  0.21% )
+    27,552,512,956      cycles                                                                  ( +-  0.03% )
+    40,109,830,364      instructions                                                            ( +-  0.01% )
+     3,967,607,988      branches                                                                ( +-  0.01% )
+         6,641,106      branch-misses                                                           ( +-  0.24% )
+           144,838      cache-misses                                                            ( +-  2.97% )
+
+       6.727281634 +- 0.002276207 seconds time elapsed  ( +-  0.03% )\n

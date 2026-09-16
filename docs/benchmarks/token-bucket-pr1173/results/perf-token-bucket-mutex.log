@@ -1,0 +1,48 @@
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/mutex
+Benchmarking token_bucket/acquire_success/mutex: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/mutex: Collecting 20 samples in estimated 1.0000 s (72M iterations)
+Benchmarking token_bucket/acquire_success/mutex: Analyzing
+token_bucket/acquire_success/mutex
+                        time:   [13.809 ns 13.900 ns 14.080 ns]
+                        change: [−0.0566% +0.3313% +1.0011%] (p = 0.53 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 20 measurements (15.00%)
+  1 (5.00%) high mild
+  2 (10.00%) high severe
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/mutex
+Benchmarking token_bucket/acquire_success/mutex: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/mutex: Collecting 20 samples in estimated 1.0000 s (72M iterations)
+Benchmarking token_bucket/acquire_success/mutex: Analyzing
+token_bucket/acquire_success/mutex
+                        time:   [13.805 ns 13.817 ns 13.839 ns]
+                        change: [−0.0798% +0.1337% +0.4255%] (p = 0.64 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 20 measurements (10.00%)
+  2 (10.00%) high severe
+
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/acquire_success/mutex
+Benchmarking token_bucket/acquire_success/mutex: Warming up for 3.0000 s
+Benchmarking token_bucket/acquire_success/mutex: Collecting 20 samples in estimated 1.0000 s (72M iterations)
+Benchmarking token_bucket/acquire_success/mutex: Analyzing
+token_bucket/acquire_success/mutex
+                        time:   [13.804 ns 13.816 ns 13.836 ns]
+                        change: [−0.0856% +0.0368% +0.1468%] (p = 0.68 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 20 measurements (15.00%)
+  3 (15.00%) high severe
+
+
+ Performance counter stats for '/root/praxis-rate-bench/target/release/deps/token_bucket-e61832f011ce306a --bench --noplot --sample-size 20 --measurement-time 1 --discard-baseline --exact token_bucket/acquire_success/mutex' (3 runs):
+
+          5,566.28 msec task-clock                                                              ( +-  0.17% )
+    20,158,554,679      cycles                                                                  ( +-  0.06% )
+    19,563,633,984      instructions                                                            ( +-  0.08% )
+     3,000,248,516      branches                                                                ( +-  0.09% )
+         8,323,907      branch-misses                                                           ( +-  0.07% )
+           203,732      cache-misses                                                            ( +-  0.47% )
+
+       4.764001648 +- 0.003278288 seconds time elapsed  ( +-  0.07% )\n

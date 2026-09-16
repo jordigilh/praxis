@@ -1,0 +1,112 @@
+
+=== success-1 (0-1) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/1
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Collecting 50 samples in estimated 2.0000 s (200M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/1: Analyzing
+token_bucket/contention_success/split_atomics_locked/1
+                        time:   [9.9970 ns 10.012 ns 10.031 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  1 (2.00%) low severe
+  1 (2.00%) high mild
+
+
+=== success-2 (0-2) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/2
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Collecting 50 samples in estimated 2.0001 s (18M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/2: Analyzing
+token_bucket/contention_success/split_atomics_locked/2
+                        time:   [132.12 ns 136.44 ns 140.63 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  2 (4.00%) high mild
+
+
+=== success-4 (0-4) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/4
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Collecting 50 samples in estimated 2.0002 s (14M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/4: Analyzing
+token_bucket/contention_success/split_atomics_locked/4
+                        time:   [160.49 ns 182.78 ns 205.86 ns]
+
+
+=== success-8 (0-8) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/8
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Collecting 50 samples in estimated 2.0005 s (3.5M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/8: Analyzing
+token_bucket/contention_success/split_atomics_locked/8
+                        time:   [470.46 ns 510.75 ns 550.43 ns]
+
+
+=== success-16 (0-16) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_success/split_atomics_locked/16
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Collecting 50 samples in estimated 2.0013 s (1.6M iterations)
+Benchmarking token_bucket/contention_success/split_atomics_locked/16: Analyzing
+token_bucket/contention_success/split_atomics_locked/16
+                        time:   [760.55 ns 855.69 ns 950.33 ns]
+
+
+=== rejection-1 (0-1) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Collecting 50 samples in estimated 2.0000 s (187M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/1: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/1
+                        time:   [10.750 ns 10.778 ns 10.804 ns]
+
+
+=== rejection-2 (0-2) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Collecting 50 samples in estimated 2.0000 s (16M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/2: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/2
+                        time:   [121.86 ns 122.31 ns 122.83 ns]
+Found 1 outliers among 50 measurements (2.00%)
+  1 (2.00%) low mild
+
+
+=== rejection-4 (0-4) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Collecting 50 samples in estimated 2.0002 s (7.9M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/4: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/4
+                        time:   [242.00 ns 249.82 ns 258.14 ns]
+
+
+=== rejection-8 (0-8) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Collecting 50 samples in estimated 2.0002 s (3.5M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/8: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/8
+                        time:   [504.07 ns 528.85 ns 553.51 ns]
+Found 2 outliers among 50 measurements (4.00%)
+  1 (2.00%) high mild
+  1 (2.00%) high severe
+
+
+=== rejection-16 (0-16) ===
+Gnuplot not found, using plotters backend
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Warming up for 3.0000 s
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Collecting 50 samples in estimated 2.0002 s (2.4M iterations)
+Benchmarking token_bucket/contention_rejection/split_atomics_locked/16: Analyzing
+token_bucket/contention_rejection/split_atomics_locked/16
+                        time:   [959.57 ns 1.0396 µs 1.1099 µs]
+Found 2 outliers among 50 measurements (4.00%)
+  1 (2.00%) low severe
+  1 (2.00%) low mild\n
