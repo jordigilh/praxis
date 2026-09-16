@@ -73,6 +73,28 @@
     .bad { color: var(--amber); font-weight: 650; }
     .note { color: var(--muted); font-size: 14px; }
     .columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .chart { border: 1px solid var(--line); background: #fbfcfd; margin: 18px 0; padding: 16px; }
+    .chart h3 { margin-top: 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px 18px; color: var(--muted); font-size: 13px; margin: 10px 0 16px; }
+    .legend-item { align-items: center; display: inline-flex; gap: 6px; }
+    .swatch { display: inline-block; height: 10px; width: 20px; }
+    .swatch.mutex, .bar.mutex { background: var(--green); }
+    .swatch.split, .bar.split { background: var(--amber); }
+    .swatch.locked, .bar.locked { background: #7052a3; }
+    .swatch.virtual, .bar.virtual { background: var(--blue); }
+    .chart-axis { color: var(--muted); font-size: 12px; margin: 0 0 8px 112px; }
+    .chart-scale { color: var(--muted); display: grid; font-size: 11px; grid-template-columns: 112px repeat(5, 1fr); margin-bottom: 4px; }
+    .chart-scale span { border-left: 1px solid var(--line); padding-left: 4px; }
+    .chart-scale span:first-child { border-left: 0; }
+    .chart-group { margin: 12px 0 18px; }
+    .chart-group:last-child { margin-bottom: 0; }
+    .chart-group-label { font-size: 13px; font-weight: 650; margin-bottom: 5px; }
+    .chart-series { display: grid; grid-template-columns: 112px minmax(0, 1fr) 92px; gap: 8px; align-items: center; margin: 5px 0; }
+    .chart-series-label { color: var(--muted); font-size: 12px; }
+    .bar-track { background: #e7ebee; height: 14px; }
+    .bar { height: 100%; min-width: 2px; }
+    .bar-value { font-size: 12px; white-space: nowrap; }
+    .chart-caption { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
     ul { margin: 8px 0 14px; padding-left: 22px; }
     li { margin: 5px 0; }
     pre {
@@ -88,9 +110,16 @@
       main { padding: 28px 14px 48px; }
       .stats, .columns { grid-template-columns: 1fr 1fr; }
       .section { padding: 14px; }
+      .chart-series { grid-template-columns: 94px minmax(0, 1fr) 82px; }
+      .chart-axis { margin-left: 94px; }
+      .chart-scale { grid-template-columns: 94px repeat(5, 1fr); }
     }
     @media (max-width: 460px) {
       .stats { grid-template-columns: 1fr; }
+      .chart-series { grid-template-columns: 82px minmax(0, 1fr); }
+      .bar-value { grid-column: 2; }
+      .chart-axis { margin-left: 82px; }
+      .chart-scale { grid-template-columns: 82px repeat(5, 1fr); }
     }
   </style>
 </head>
@@ -174,7 +203,36 @@
 
     <h2>Core Operation Cost</h2>
     <section class="section">
-      <p class="note">Median of three final Criterion runs; wall-clock time per operation.</p>
+      <p class="note">Median of three final Criterion runs; wall-clock time per operation. The chart uses a 0-35 ns scale.</p>
+      <figure class="chart" aria-labelledby="core-chart-title">
+        <h3 id="core-chart-title">Core operation time by workload</h3>
+        <div class="legend" aria-label="Candidate legend">
+          <span class="legend-item"><span class="swatch mutex"></span>Mutex</span>
+          <span class="legend-item"><span class="swatch split"></span>Split atomics (unsafe)</span>
+          <span class="legend-item"><span class="swatch virtual"></span>Virtual time/GCRA</span>
+        </div>
+        <div class="chart-axis">X-axis: wall-clock time per operation (ns)</div>
+        <div class="chart-scale" aria-hidden="true"><span></span><span>0</span><span>9</span><span>18</span><span>27</span><span>35 ns</span></div>
+        <div class="chart-group">
+          <div class="chart-group-label">Success</div>
+          <div class="chart-series"><span class="chart-series-label">Mutex</span><div class="bar-track"><div class="bar mutex" style="width:39.49%"></div></div><span class="bar-value">13.822 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Split atomics</span><div class="bar-track"><div class="bar split" style="width:40.97%"></div></div><span class="bar-value">14.340 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Virtual time</span><div class="bar-track"><div class="bar virtual" style="width:30.24%"></div></div><span class="bar-value">10.584 ns</span></div>
+        </div>
+        <div class="chart-group">
+          <div class="chart-group-label">Refill success</div>
+          <div class="chart-series"><span class="chart-series-label">Mutex</span><div class="bar-track"><div class="bar mutex" style="width:40.94%"></div></div><span class="bar-value">14.328 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Split atomics</span><div class="bar-track"><div class="bar split" style="width:85.14%"></div></div><span class="bar-value">29.800 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Virtual time</span><div class="bar-track"><div class="bar virtual" style="width:30.24%"></div></div><span class="bar-value">10.584 ns</span></div>
+        </div>
+        <div class="chart-group">
+          <div class="chart-group-label">Rejection</div>
+          <div class="chart-series"><span class="chart-series-label">Mutex</span><div class="bar-track"><div class="bar mutex" style="width:37.32%"></div></div><span class="bar-value">13.063 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Split atomics</span><div class="bar-track"><div class="bar split" style="width:7.17%"></div></div><span class="bar-value">2.511 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Virtual time</span><div class="bar-track"><div class="bar virtual" style="width:6.49%"></div></div><span class="bar-value">2.273 ns</span></div>
+        </div>
+        <figcaption class="chart-caption">Y-axis: workload path. Source: three final Criterion runs; lower is faster.</figcaption>
+      </figure>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Workload</th><th>Mutex</th><th>Split atomics</th><th>Virtual time/GCRA</th></tr></thead>
@@ -194,9 +252,37 @@
         Three independent higher-sample rounds used synchronized worker starts,
         setup and joins outside the measured interval, 50 samples, 3 second warmup,
         2 second measurement, and process affinity on physical CPU ranges 0 through N
-        plus one coordinating core. Values in parentheses are the minimum and maximum
-        run medians.
+        plus one coordinating core. The mutex, historical split, and virtual-time
+        columns come from the original corrected three-round set; locked split fields
+        come from a separate corrected three-round retry. Values in parentheses are
+        the minimum and maximum run medians.
       </p>
+      <figure class="chart" aria-labelledby="contention-chart-title">
+        <h3 id="contention-chart-title">High-contention successful acquisition time</h3>
+        <div class="legend" aria-label="Candidate legend">
+          <span class="legend-item"><span class="swatch mutex"></span>Mutex</span>
+          <span class="legend-item"><span class="swatch split"></span>Split atomics (unsafe)</span>
+          <span class="legend-item"><span class="swatch locked"></span>Locked split fields</span>
+          <span class="legend-item"><span class="swatch virtual"></span>Virtual time/GCRA</span>
+        </div>
+        <div class="chart-axis">X-axis: wall-clock time per operation (ns), 0-900 ns</div>
+        <div class="chart-scale" aria-hidden="true"><span></span><span>0</span><span>225</span><span>450</span><span>675</span><span>900 ns</span></div>
+        <div class="chart-group">
+          <div class="chart-group-label">8 workers</div>
+          <div class="chart-series"><span class="chart-series-label">Mutex</span><div class="bar-track"><div class="bar mutex" style="width:26.65%"></div></div><span class="bar-value">239.820 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Split atomics</span><div class="bar-track"><div class="bar split" style="width:23.01%"></div></div><span class="bar-value">207.100 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Locked split</span><div class="bar-track"><div class="bar locked" style="width:49.10%"></div></div><span class="bar-value">441.860 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Virtual time</span><div class="bar-track"><div class="bar virtual" style="width:25.96%"></div></div><span class="bar-value">233.670 ns</span></div>
+        </div>
+        <div class="chart-group">
+          <div class="chart-group-label">16 workers</div>
+          <div class="chart-series"><span class="chart-series-label">Mutex</span><div class="bar-track"><div class="bar mutex" style="width:90.82%"></div></div><span class="bar-value">817.370 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Split atomics</span><div class="bar-track"><div class="bar split" style="width:35.39%"></div></div><span class="bar-value">318.540 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Locked split</span><div class="bar-track"><div class="bar locked" style="width:95.00%"></div></div><span class="bar-value">855.690 ns</span></div>
+          <div class="chart-series"><span class="chart-series-label">Virtual time</span><div class="bar-track"><div class="bar virtual" style="width:39.68%"></div></div><span class="bar-value">357.140 ns</span></div>
+        </div>
+        <figcaption class="chart-caption">Y-axis: worker count. This view focuses on 8 and 16 workers so the high-contention differences remain legible; the complete 1-16 worker data is in the tables below.</figcaption>
+      </figure>
       <h3>Successful acquisitions</h3>
       <div class="table-wrap">
         <table>
@@ -227,6 +313,7 @@
         The historical split-atomic and virtual-time rejection paths remain highly
         parallel because rejected requests do not mutate state. The locked split path
         must acquire its spin lock even for rejection, so its contention cost rises.
+        The locked split values are from the separate retry rounds noted above.
       </p>
     </section>
 
