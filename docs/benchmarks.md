@@ -33,6 +33,7 @@ Location: `tests/benches/benches/`
 | `config_parsing` | YAML config deserialization at varying complexity |
 | `load_balancer` | Round-robin, least-connections, consistent-hash with varying upstreams |
 | `headers` | Request/response header injection (1/5/20 headers) |
+| `token_bucket` | Mutex, locked split-field, packed 128-bit CAS, and `governor` rate-limit state under sequential and concurrent load |
 
 Run all microbenchmarks:
 
@@ -40,13 +41,40 @@ Run all microbenchmarks:
 cargo bench -p praxis-tests-benches
 ```
 
+Run the rate-limit state-management suite on its own:
+
+```console
+cargo bench -p praxis-tests-benches --bench token_bucket
+```
+
+The `token_bucket` suite compares four candidates against the mutex
+implementation from PR #1173: `split_atomics_locked`, a correctness-preserving
+split-field implementation guarded by an atomic spin lock; `packed_128_cas`, an
+exact compound-state CAS prototype; and the actual `governor 0.10.4` direct
+in-memory `RateLimiter::check()` path. The locked split variant measures
+serialization overhead, not a lock-free design. The packed candidate uses
+`portable-atomic` and must be identified as native or fallback on each host.
+Governor uses integer-cell virtual-time semantics and has no equivalent
+token-count introspection API, so it is a performance comparison rather than an
+API-equivalent replacement.
+
+The suite contains 55 benchmark IDs: 8 isolated operations, 4 rejection paths,
+3 introspection paths, and 40 contention cases. Introspection is intentionally
+limited to candidates that expose the production token-count operation.
+
+Historical split-atomic logs from the PR investigation are not committed to the
+repository. The unsafe implementation is not part of the runnable suite or the
+decision tables.
+
 Run a single suite:
 
 ```console
 cargo bench -p praxis-tests-benches --bench router_lookup
 ```
 
-Results land in `target/criterion/` with HTML reports.
+Results land in `target/criterion/` with Criterion HTML reports. CI uploads the
+generated directory as a workflow artifact; raw run logs and host-specific
+snapshots are not committed to the repository.
 
 ## Scenario Benchmarks
 

@@ -13,7 +13,10 @@ workspace = true
 
 [dev-dependencies]
 criterion = { workspace = true }
+governor = { workspace = true }
 http = { workspace = true }
+parking_lot = { workspace = true }
+portable-atomic = { workspace = true }
 praxis-core = { workspace = true }
 praxis-filter = { workspace = true }
 serde_yaml = { workspace = true }
@@ -47,6 +50,11 @@ harness = false
 [[bench]]
 name = "router_lookup"
 path = "benches/router_lookup.rs"
+harness = false
+
+[[bench]]
+name = "token_bucket"
+path = "benches/token_bucket.rs"
 harness = false
 
 # Lets the policy filter be compiled into the benchmark binaries so the policy
