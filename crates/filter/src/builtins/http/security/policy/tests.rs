@@ -1035,9 +1035,6 @@ async fn gated_identity_is_isolated_between_policy_instances() {
 // Config parsing
 // -----------------------------------------------------------------------------
 
-/// The minimal valid config carries only `config_path:`; all other
-/// fields (`body_access`, `require_protocol_metadata`, `init_timeout_secs`,
-/// `max_buffer_bytes`) take their documented defaults.
 #[test]
 fn config_parses_minimal_yaml() {
     let yaml = "config_path: /etc/praxis/policy.yaml";
@@ -1048,7 +1045,6 @@ fn config_parses_minimal_yaml() {
 
 #[test]
 fn rejects_zero_max_buffer_bytes() {
-    // The check runs before the config_path read, so a bogus path is fine.
     let cfg = PolicyFilterConfig {
         config_path: "/nonexistent/policy.yaml".to_owned(),
         allow_private_idp: false,
@@ -1081,8 +1077,6 @@ fn rejects_oversized_max_buffer_bytes() {
     assert!(err.contains("exceeds the maximum"), "got: {err}");
 }
 
-/// The filter declares its policy document, which is what lets the config
-/// watcher reload when an operator edits policy. See praxis-proxy/praxis#900.
 #[test]
 fn referenced_files_declares_the_policy_document() {
     let (_dir, path) = write_single_plugin_config();
@@ -1094,8 +1088,6 @@ fn referenced_files_declares_the_policy_document() {
     );
 }
 
-/// `max_buffer_bytes` is operator-tunable; an explicit value overrides
-/// the 10 MiB default so deployments can bound `ReadWrite` buffering.
 #[test]
 fn config_max_buffer_bytes_override() {
     let yaml = "config_path: /etc/praxis/policy.yaml\nmax_buffer_bytes: 1048576";
@@ -1103,9 +1095,6 @@ fn config_max_buffer_bytes_override() {
     assert_eq!(cfg.max_buffer_bytes, 1_048_576, "explicit max_buffer_bytes wins");
 }
 
-/// `config_path:` is mandatory — there's no default that would let
-/// the filter load a policy document, so an empty config block
-/// must fail at deserialize time rather than at first request.
 #[test]
 fn config_requires_config_path() {
     let yaml = "{}";
@@ -1581,7 +1570,6 @@ async fn tampered_jwt_signature_rejects_401() {
     let (_dir, path) = write_single_plugin_config();
     let filter = build_filter(path);
 
-    // Flip the final character of the signature segment.
     let mut token = mint_jwt(&standard_claims("alice"));
     let last = token.pop().unwrap_or('A');
     token.push(if last == 'A' { 'B' } else { 'A' });
@@ -1658,11 +1646,6 @@ async fn multi_source_both_identities_continue() {
     );
 }
 
-/// The response phase uses `spawn_blocking` + `Handle::block_on` to
-/// drive async work from the sync `on_response_body` trait method.
-/// Unlike the previous `block_in_place` approach, `spawn_blocking`
-/// works on current-thread runtimes too. The default `#[tokio::test]`
-/// flavor is current-thread, which matches praxis `work_stealing: false`.
 #[tokio::test]
 async fn current_thread_runtime_is_accepted() {
     let (_dir, path) = write_single_plugin_config();
@@ -1681,11 +1664,6 @@ async fn current_thread_runtime_is_accepted() {
     );
 }
 
-/// A pure-L7 (`global`-only) policy authorizes at `on_request` over
-/// `http.*` + identity. Since CMF dispatch is offloaded via
-/// `spawn_blocking`, it runs on the default current-thread `#[tokio::test]`
-/// runtime (which matches praxis `work_stealing: false`) rather than
-/// requiring a multi-threaded runtime.
 #[tokio::test]
 async fn current_thread_runtime_allows_pure_l7() {
     let (_dir, path) = write_l7_global_config();
@@ -1694,8 +1672,6 @@ async fn current_thread_runtime_allows_pure_l7() {
     let req = make_request(Method::GET, "/");
     let mut ctx = make_filter_context(&req);
 
-    // `on_request` returns an Ok authorization verdict on a current-thread
-    // runtime — no runtime-flavor rejection.
     let action = filter.on_request(&mut ctx).await;
     assert!(
         action.is_ok(),
@@ -1707,11 +1683,6 @@ async fn current_thread_runtime_allows_pure_l7() {
 // Config-schema guards
 // -----------------------------------------------------------------------------
 
-/// `#[serde(deny_unknown_fields)]` must reject typos like `body_acces`
-/// — without this, the misspelled field is silently dropped, the
-/// default `ReadOnly` mode wins, and `redact()` policies become a
-/// no-op. The typo would be invisible to operators until they checked
-/// upstream traffic and noticed redaction wasn't happening.
 #[test]
 fn config_rejects_unknown_fields() {
     let yaml = "
@@ -1727,9 +1698,6 @@ body_acces: read_write
     );
 }
 
-/// `require_protocol_metadata` defaults to `true` — the safer fail-closed
-/// posture. Operators must explicitly opt in to identity-only
-/// pass-through for non-classified traffic.
 #[test]
 fn config_require_protocol_metadata_defaults_to_true() {
     let yaml = "config_path: /etc/praxis/policy.yaml";
@@ -1737,8 +1705,6 @@ fn config_require_protocol_metadata_defaults_to_true() {
     assert!(cfg.require_protocol_metadata, "default must be fail-closed");
 }
 
-/// `init_timeout_secs` defaults to 30s when omitted. Operators don't
-/// have to think about it; the bound is just present.
 #[test]
 fn config_init_timeout_defaults_to_30s() {
     let yaml = "config_path: /etc/praxis/policy.yaml";
@@ -1746,8 +1712,6 @@ fn config_init_timeout_defaults_to_30s() {
     assert_eq!(cfg.init_timeout_secs, 30);
 }
 
-/// An operator-supplied `init_timeout_secs` round-trips. Pins the
-/// knob exists at the YAML surface, not just in the struct.
 #[test]
 fn config_init_timeout_honors_override() {
     let yaml = "config_path: /etc/praxis/policy.yaml\ninit_timeout_secs: 5";
@@ -1894,10 +1858,6 @@ async fn missing_protocol_metadata_passes_when_not_required() {
 // Post-phase deny envelope (json_rpc_error_envelope_bytes)
 // -----------------------------------------------------------------------------
 
-/// The post-phase deny path replaces the response body with this
-/// envelope when an APL `result:` pipeline denies. The envelope shape
-/// must match the JSON-RPC error format so clients can parse it the
-/// same way they parse upstream errors.
 #[test]
 fn json_rpc_error_envelope_has_expected_shape() {
     use ppe::praxis_policy_core::error::PluginViolation;
@@ -1917,9 +1877,6 @@ fn json_rpc_error_envelope_has_expected_shape() {
     assert_eq!(parsed["error"]["data"]["violation"], "test.deny");
 }
 
-/// `request_id` should round-trip preserving the JSON type the client
-/// sent — string id stays a string, numeric stays numeric, etc.
-/// Pins compliance with the JSON-RPC 2.0 spec.
 #[test]
 fn json_rpc_error_envelope_preserves_string_request_id() {
     use super::error::json_rpc_error_envelope_bytes;
@@ -1929,8 +1886,6 @@ fn json_rpc_error_envelope_preserves_string_request_id() {
     assert_eq!(parsed["id"], "req-abc-123");
 }
 
-/// When no violation is provided (defensive null path), the envelope
-/// still parses and carries the sentinel `gateway.unknown` code.
 #[test]
 fn json_rpc_error_envelope_handles_missing_violation() {
     use super::error::json_rpc_error_envelope_bytes;
@@ -1945,10 +1900,6 @@ fn json_rpc_error_envelope_handles_missing_violation() {
 // auth_rejection (transport-level 401)
 // -----------------------------------------------------------------------------
 
-/// `auth_rejection` builds an HTTP 401 with `WWW-Authenticate: Bearer`
-/// and `X-Policy-Violation:` reflecting the violation code so audit /
-/// middleware can classify without parsing the body. Body carries the
-/// short `code: reason` diagnostic.
 #[test]
 fn auth_rejection_shape_when_violation_present() {
     use ppe::praxis_policy_core::error::PluginViolation;
@@ -1979,8 +1930,6 @@ fn auth_rejection_shape_when_violation_present() {
     );
 }
 
-/// No violation surfaced still produces a usable 401 with the sentinel
-/// `auth.unknown` code — clients always get a structured response.
 #[test]
 fn auth_rejection_falls_back_to_sentinel_when_no_violation() {
     use super::error::auth_rejection;
@@ -1997,8 +1946,6 @@ fn auth_rejection_falls_back_to_sentinel_when_no_violation() {
 // http_authz_rejection (generic-HTTP / L7 deny mapping)
 // -----------------------------------------------------------------------------
 
-/// With no `denyWith` details, the L7 deny defaults to HTTP 403 and a
-/// `"<code>: <reason>"` body, always stamping `X-Policy-Violation`.
 #[test]
 fn http_authz_rejection_defaults_without_details() {
     use ppe::praxis_policy_core::error::PluginViolation;
@@ -2022,8 +1969,6 @@ fn http_authz_rejection_defaults_without_details() {
     );
 }
 
-/// A `denyWith` (the policy's `response:`) block sets a custom status, body, and
-/// safe headers on the L7 deny.
 #[test]
 fn http_authz_rejection_applies_custom_denywith() {
     use std::collections::HashMap;
@@ -2052,8 +1997,6 @@ fn http_authz_rejection_applies_custom_denywith() {
     assert_eq!(custom.expect("custom denyWith header").1, "method-not-allowed");
 }
 
-/// An out-of-range `http.status` falls back to 403 rather than reaching
-/// `Rejection::status` with an invalid code.
 #[test]
 fn http_authz_rejection_clamps_out_of_range_status() {
     use std::collections::HashMap;
@@ -2069,8 +2012,6 @@ fn http_authz_rejection_clamps_out_of_range_status() {
     assert_eq!(rej.status, 403, "an out-of-range denyWith status falls back to 403");
 }
 
-/// Header names/values carrying CR/LF/NUL are dropped (response-splitting
-/// defense) while sibling safe headers still attach.
 #[test]
 fn http_authz_rejection_drops_control_char_headers() {
     use std::collections::HashMap;
@@ -2102,8 +2043,6 @@ fn http_authz_rejection_drops_control_char_headers() {
     );
 }
 
-/// A missing violation still yields a structured 403 with the sentinel
-/// `policy.deny` code.
 #[test]
 fn http_authz_rejection_falls_back_to_sentinel_when_no_violation() {
     use super::error::http_authz_rejection;
@@ -2121,10 +2060,6 @@ fn http_authz_rejection_falls_back_to_sentinel_when_no_violation() {
 // fit_to_original_length (request/response body framing)
 // -----------------------------------------------------------------------------
 
-/// On shrink, `fit_to_original_length` pads the new body with trailing
-/// ASCII spaces so the wire length equals the original `Content-Length`.
-/// JSON parsers ignore trailing whitespace, so a downstream consumer
-/// sees the rewritten envelope without a framing desync.
 #[test]
 fn fit_to_original_length_pads_on_shrink() {
     use super::filter::fit_to_original_length;
@@ -2139,9 +2074,6 @@ fn fit_to_original_length_pads_on_shrink() {
     );
 }
 
-/// On equal-length rewrite, the original bytes pass through unchanged.
-/// No allocation, no padding — the common steady-state case for
-/// in-place mutations like `redact(value)` swapping a same-width token.
 #[test]
 fn fit_to_original_length_passes_through_on_equal() {
     use super::filter::fit_to_original_length;
@@ -2150,12 +2082,6 @@ fn fit_to_original_length_passes_through_on_equal() {
     assert_eq!(out, new);
 }
 
-/// On grow, the body is truncated to exactly the original
-/// `Content-Length`. The downstream response length is already committed
-/// by the time `on_response_body` runs, so emitting more bytes would let
-/// the overflow be parsed as the next response (a smuggling primitive).
-/// Truncation corrupts the JSON but preserves HTTP/1.1 framing — the
-/// safe failure mode.
 #[test]
 fn fit_to_original_length_truncates_on_grow() {
     use super::filter::fit_to_original_length;
@@ -2169,8 +2095,6 @@ fn fit_to_original_length_truncates_on_grow() {
 // cmf.rs — JSON-RPC method → entity coords
 // -----------------------------------------------------------------------------
 
-/// Pre-phase mapping returns `(entity_type, pre_hook_name)` for
-/// methods that carry an entity, `None` for the no-entity methods.
 #[test]
 fn entity_for_protocol_method_covers_known_methods() {
     use super::common_message_format::entity_for_protocol_method;
@@ -2182,7 +2106,6 @@ fn entity_for_protocol_method_covers_known_methods() {
     assert!(entity_for_protocol_method("unknown/method").is_none());
 }
 
-/// Post-phase mirror — same set of methods, different hooks.
 #[test]
 fn entity_for_protocol_method_post_covers_known_methods() {
     use super::common_message_format::entity_for_protocol_method_post;
@@ -2197,9 +2120,6 @@ fn entity_for_protocol_method_post_covers_known_methods() {
 // json_rpc.rs — id extraction + content builders + re-serializers
 // -----------------------------------------------------------------------------
 
-/// `json_rpc_id` returns the `id` as a string for both string and
-/// numeric ids (CMF correlation needs a single canonical key), and
-/// falls back to the empty string when the body is missing or malformed.
 #[test]
 fn json_rpc_id_handles_string_numeric_and_malformed() {
     use super::json_rpc::ParsedEnvelope;
@@ -2213,9 +2133,6 @@ fn json_rpc_id_handles_string_numeric_and_malformed() {
     assert_eq!(ParsedEnvelope::parse(&bad).id_string(), "");
 }
 
-/// `json_rpc_id_value` preserves the original JSON type so an error
-/// envelope echoes back exactly what the client sent (string stays a
-/// string; numeric stays numeric). Missing/malformed → `Value::Null`.
 #[test]
 fn json_rpc_id_value_preserves_json_type() {
     use super::json_rpc::ParsedEnvelope;
@@ -2227,8 +2144,6 @@ fn json_rpc_id_value_preserves_json_type() {
     assert_eq!(ParsedEnvelope::parse(&bad).id_value(), serde_json::Value::Null);
 }
 
-/// `tools/call` parses `params.arguments` into a `ToolCall` content
-/// part so APL `args.<field>` predicates have something to read.
 #[test]
 fn build_content_for_method_tools_call() {
     use ppe::praxis_policy_core::cmf::ContentPart;
@@ -2257,8 +2172,6 @@ fn build_content_for_method_tools_call() {
     }
 }
 
-/// `resources/read` produces a `ResourceRef` keyed off `params.uri`
-/// so route resolution and APL `resource.*` predicates work.
 #[test]
 fn build_content_for_method_resources_read() {
     use ppe::praxis_policy_core::cmf::ContentPart;
@@ -2285,9 +2198,6 @@ fn build_content_for_method_resources_read() {
     }
 }
 
-/// Unknown / no-entity methods produce an empty content list — CMF
-/// dispatch still routes by entity coords but predicates over
-/// `args.*` see nothing, which is the correct behavior.
 #[test]
 fn build_content_for_method_unknown_method_yields_empty() {
     use super::json_rpc::build_content_for_method;
@@ -2301,10 +2211,6 @@ fn build_content_for_method_unknown_method_yields_empty() {
     assert!(parts.is_empty());
 }
 
-/// `reserialize_json_rpc_body` mutates only `params.arguments` (for
-/// `tools/call`), leaving `jsonrpc`, `id`, `method`, `params.name`
-/// untouched. Operators who hash the envelope only see deltas when
-/// APL actually mutated.
 #[test]
 fn reserialize_tools_call_round_trips_with_mutated_args() {
     use ppe::praxis_policy_core::cmf::{ContentPart, Message, Role, ToolCall};
@@ -2337,10 +2243,6 @@ fn reserialize_tools_call_round_trips_with_mutated_args() {
     assert_eq!(parsed["params"]["arguments"]["a"], "[REDACTED]");
 }
 
-/// Response-side: text-only content (no `structuredContent`) is parsed
-/// out of the first text block. JSON-string contents resolve to typed
-/// `content`; non-JSON text wraps as `{ "text": "<raw>" }`. The
-/// `isError` flag round-trips.
 #[test]
 fn build_response_content_for_method_text_fallback() {
     use ppe::praxis_policy_core::cmf::ContentPart;
@@ -2368,8 +2270,6 @@ fn build_response_content_for_method_text_fallback() {
     }
 }
 
-/// `structuredContent` takes precedence over the text-block fallback
-/// when present.
 #[test]
 fn build_response_content_for_method_prefers_structured_content() {
     use ppe::praxis_policy_core::cmf::ContentPart;
@@ -2398,11 +2298,6 @@ fn build_response_content_for_method_prefers_structured_content() {
     }
 }
 
-/// Response-side: when `result.content` has MULTIPLE text blocks and no
-/// `structuredContent`, every block must end up in APL's view — not just
-/// the first. Otherwise a later block carries data the policy never
-/// inspected and the re-serializer never rewrites, leaking it. The
-/// folded view exposes all blocks under `text`.
 #[test]
 fn build_response_content_for_method_folds_all_text_blocks() {
     use ppe::praxis_policy_core::cmf::ContentPart;
@@ -2436,11 +2331,6 @@ fn build_response_content_for_method_folds_all_text_blocks() {
     }
 }
 
-/// Response-side emit: when APL mutates the result, the entire
-/// `result.content` array is collapsed to a single canonical text block
-/// holding the vetted payload. Any other blocks (extra text, non-text)
-/// are dropped so nothing the policy didn't vet survives, and
-/// `structuredContent` is mirrored when the original had it.
 #[test]
 fn reserialize_response_collapses_to_single_vetted_block() {
     use ppe::praxis_policy_core::cmf::{ContentPart, Message, Role, ToolResult};
@@ -2475,11 +2365,6 @@ fn reserialize_response_collapses_to_single_vetted_block() {
     );
 }
 
-/// Fail-closed sizing: a deny envelope substituted on the
-/// response-rewrite-overflow / identity-failure paths is fitted to the
-/// committed `Content-Length` — never longer. Pins the composition the
-/// filter relies on so an oversized rewrite can never become a framing
-/// desync.
 #[test]
 fn deny_envelope_fits_committed_length() {
     use ppe::praxis_policy_core::error::PluginViolation;
@@ -2583,8 +2468,6 @@ async fn entity_route_rule_sees_http_attributes() {
     );
 }
 
-/// A policy with only a `global` HTTP policy (no entity routes) derives the
-/// pure L7 shape: `http_global = true`, `entity_routes = false`.
 #[test]
 fn derives_l7_shape_for_global_only_policy() {
     let (_dir, path) = write_l7_global_config();
@@ -2596,8 +2479,6 @@ fn derives_l7_shape_for_global_only_policy() {
     );
 }
 
-/// A policy that declares entity routes derives `entity_routes = true`, so
-/// authorization runs at the body phase.
 #[test]
 fn derives_entity_shape_for_routed_policy() {
     let (_dir, path) = write_cel_policy_config();
@@ -2609,11 +2490,6 @@ fn derives_entity_shape_for_routed_policy() {
     );
 }
 
-/// A policy declaring BOTH a `global` HTTP policy and entity routes derives
-/// the combined shape `(true, true)`. In that shape `on_request` must take the
-/// identity gate (deferring authorization to the entity/body phase), NOT the
-/// pure-L7 http-authz path — otherwise the GET-only global policy would 403 a
-/// POST here instead of letting the entity route decide.
 #[tokio::test]
 async fn combined_shape_on_request_uses_identity_gate_not_http_authz() {
     let (_dir, path) = write_combined_global_and_routes_config();
@@ -2744,11 +2620,6 @@ async fn entity_on_request_body_continues_on_partial_chunks() {
 // on_response_body — early returns
 // -----------------------------------------------------------------------------
 
-/// In default `body_access: read_only`, `on_response_body` returns
-/// `Continue` without doing any work — the operator hasn't opted into
-/// response rewriting, and the post-phase deny envelope path is gated
-/// on `read_write`. Pins the early-return that keeps the sync hook
-/// from dispatching `spawn_blocking` for read-only chains.
 #[test]
 fn on_response_body_in_read_only_is_a_no_op() {
     let (_dir, path) = write_single_plugin_config();
@@ -2770,8 +2641,6 @@ fn on_response_body_in_read_only_is_a_no_op() {
     );
 }
 
-/// `on_response_body` returns `Continue` on non-EOS chunks regardless
-/// of `body_access`. Mirror of the request-side partial-chunk test.
 #[test]
 fn on_response_body_continues_on_partial_chunks() {
     let (_dir, path) = write_single_plugin_config();
@@ -2785,13 +2654,6 @@ fn on_response_body_continues_on_partial_chunks() {
     assert!(matches!(action, FilterAction::Continue));
 }
 
-/// The response phase rebuilds `Extensions` from the identity resolved
-/// in the request phase (stashed in `ctx.extensions`) rather than
-/// re-running the identity hook. With no request-phase identity stashed
-/// it fails closed with a deny envelope instead of re-resolving — so a
-/// token that expires between the request and the already-served
-/// response can never produce a false deny on a request that was
-/// authorized.
 #[tokio::test]
 #[expect(
     clippy::too_many_lines,
@@ -2814,9 +2676,6 @@ async fn response_phase_without_request_identity_fails_closed() {
     ctx.set_metadata("mcp.method", "tools/call");
     ctx.set_metadata("mcp.name", "echo");
 
-    // No `on_request_body` ran on this ctx, so no `ResolvedIdentity` is
-    // stashed. The response body is comfortably larger than the deny
-    // envelope so the envelope fits within the committed length.
     let original = bytes::Bytes::from(format!(
         r#"{{"jsonrpc":"2.0","id":1,"result":{{"content":[{{"type":"text","text":"{}"}}]}}}}"#,
         "x".repeat(256)
@@ -2846,14 +2705,6 @@ async fn response_phase_without_request_identity_fails_closed() {
 // attach_delegated_tokens — outbound header collision handling
 // -----------------------------------------------------------------------------
 
-/// Two delegated tokens that both target the same outbound header
-/// are a policy-layering mistake (overlapping delegators). Praxis's
-/// `request_headers_to_set` is overwrite-semantics and `HashMap`
-/// iteration order is non-deterministic, so the naive path would
-/// silently pick one. The filter applies first-writer-wins keyed by
-/// `(outbound_header_lc, audience)`: only the alphabetically lowest
-/// audience attaches, the other is logged and skipped, and the
-/// returned count reflects what actually went on the wire.
 #[test]
 #[expect(clippy::too_many_lines, reason = "test fixture construction")]
 fn attach_delegated_tokens_first_writer_wins_per_outbound_header() {
@@ -2870,8 +2721,6 @@ fn attach_delegated_tokens_first_writer_wins_per_outbound_header() {
     let expires = Utc::now() + Duration::hours(1);
     let tok_a = RawDelegatedToken::new("token-a", "Authorization", "aud-a", Vec::<String>::new(), expires);
     let tok_b = RawDelegatedToken::new("token-b", "Authorization", "aud-b", Vec::<String>::new(), expires);
-    // Built through the constructor rather than a struct expression: the key is
-    // non-exhaustive so a future principal slot does not break callers.
     let key_a = DelegationKey::new(DelegationMode::OnBehalfOfUser, "aud-a", Vec::new()).with_subject_id("alice");
     let key_b = DelegationKey::new(DelegationMode::OnBehalfOfUser, "aud-b", Vec::new()).with_subject_id("alice");
     let mut creds = RawCredentialsExtension::default();
@@ -2897,10 +2746,6 @@ fn attach_delegated_tokens_first_writer_wins_per_outbound_header() {
     );
 }
 
-/// Sanity: non-colliding tokens for distinct outbound headers all
-/// attach. Pins that the collision guard doesn't drop legitimate
-/// multi-audience flows (the common case for routes that delegate
-/// to multiple upstream APIs simultaneously).
 #[test]
 fn attach_delegated_tokens_distinct_outbound_headers_all_attach() {
     use std::sync::Arc;
@@ -3090,9 +2935,6 @@ fn try_build_filter_allowing_private(
     })
 }
 
-/// The control for everything below. A `kind:` nobody registered must fail the
-/// load, naming the kind, so a forgotten registration is a startup error rather
-/// than a plugin that silently never runs.
 #[test]
 fn a_kind_with_no_registration_fails_the_load() {
     let (_dir, path) = write_config_naming_kind("test/never-registered");
@@ -3108,8 +2950,6 @@ fn a_kind_with_no_registration_fails_the_load() {
     );
 }
 
-/// The same document loads once a host registers the kind, and the host's
-/// factory is what built the plugin.
 #[test]
 fn a_host_registered_kind_loads_and_its_factory_is_used() {
     let builds = register_stub("test/host-supplied");
@@ -3122,13 +2962,6 @@ fn a_host_registered_kind_loads_and_its_factory_is_used() {
     );
 }
 
-/// One registration has to serve repeated construction.
-///
-/// This is the regression test for the tempting design: a registry that hands
-/// its entries out once and empties itself. `PolicyFilter::new` runs again on
-/// every hot reload, so draining would give a gateway that starts clean and then
-/// fails its first reload with "no factory registered" for a config that had
-/// been serving traffic. Two constructions, two builds.
 #[test]
 fn one_registration_serves_repeated_filter_construction() {
     let builds = register_stub("test/reload-survivor");
@@ -3146,17 +2979,6 @@ fn one_registration_serves_repeated_filter_construction() {
     );
 }
 
-/// A host registration replaces a bundled `kind` of the same name.
-///
-/// Host factories are applied after the engine's, and the factory registry is
-/// last-writer-wins, so a deployment can swap a bundled implementation for its
-/// own without forking. The signal is that a config with no `config:` block
-/// loads: the bundled `OAuth` delegator rejects that, and the stub accepts it.
-///
-/// The registration is process-global and outlives this test. `delegator/oauth`
-/// is used by no other test in this file, which is what makes hijacking it safe
-/// here; a test that needs the real delegator must not rely on the global
-/// registry.
 #[test]
 fn a_host_registration_replaces_a_bundled_kind() {
     let builds = register_stub("delegator/oauth");
