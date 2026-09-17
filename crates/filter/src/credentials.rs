@@ -742,8 +742,6 @@ mod tests {
 
     #[test]
     fn inject_warns_and_drops_when_prevalidated_value_regresses() {
-        // Construct directly, bypassing `build`'s validation, to reach the
-        // invariant-violation branch `inject_canonical` guards against.
         let cred = DeferredCredential {
             scope: CredentialScope::Authority(parse_canonical("api.example.com:443", None).expect("valid authority")),
             header: HeaderName::from_static("authorization"),

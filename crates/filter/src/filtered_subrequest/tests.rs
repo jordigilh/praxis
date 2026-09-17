@@ -282,9 +282,6 @@ fn request_sanitization_strips_all_reserved_headers_including_depth() {
 
 #[test]
 fn sanitize_keeps_essential_and_proxy_owned_headers_named_in_connection() {
-    // A client must not be able to delete the proxy's trust/authority
-    // headers by naming them in a Connection token on a filtered
-    // sub-request; only genuinely custom connection-scoped headers go.
     let mut headers = HeaderMap::new();
     headers.insert(
         http::header::CONNECTION,
@@ -544,8 +541,6 @@ async fn build_peer_derives_sni_from_hostname_address() {
 
 #[tokio::test]
 async fn build_peer_rejects_hostname_resolving_to_private_address() {
-    // A sub-request upstream is as exposed to DNS rebinding as the main
-    // upstream path: the resolved address must be checked, not trusted.
     let upstream = praxis_core::connectivity::Upstream {
         address: std::sync::Arc::from("localhost:9444"),
         connection: std::sync::Arc::new(praxis_core::connectivity::ConnectionOptions::default()),
@@ -583,8 +578,6 @@ async fn run_returns_buffered_for_locally_produced_response() {
 
     use praxis_core::subrequest::{SubRequestClient, SubRequestConnector};
 
-    // A bound outbound chain that terminates locally with a fixed response, so
-    // the executor never has to contact a real upstream.
     let registry = crate::FilterRegistry::with_builtins();
     let mut entries: Vec<crate::FilterEntry> = serde_yaml::from_str(
         "
@@ -596,8 +589,6 @@ async fn run_returns_buffered_for_locally_produced_response() {
     .unwrap();
     let pipeline = Arc::new(crate::FilterPipeline::build(&mut entries, &registry).unwrap());
 
-    // Construct the executor through the deliberately small public surface an
-    // application callout uses.
     let client = SubRequestClient::new(SubRequestConnector::new(1, None));
     let downstream = crate::SubrequestRuntime::new(None, false, None, Instant::now());
     let executor = crate::FilteredSubrequestExecutor::for_callout(
@@ -1017,8 +1008,6 @@ async fn buffered_subrequest_context_inherits_parent_session_stores() {
     let saw_on_response_body = Arc::new(AtomicBool::new(false));
     let registry = recorder_registry(&saw_on_request, &saw_on_response_body);
 
-    // The recorder observes the context, then a static response terminates the
-    // chain locally so the executor never contacts an upstream.
     let mut entries: Vec<crate::FilterEntry> = serde_yaml::from_str(
         "
 - filter: test_session_store_recorder
@@ -1070,9 +1059,6 @@ async fn subrequest_binds_credentials_to_logical_authority_not_transport() {
     let (addr, backend) =
         spawn_capturing_backend("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok", Arc::clone(&captured)).await;
 
-    // The upstream's logical authority (`api.internal`) differs from its
-    // transport endpoint (`127.0.0.1:<port>`). A credential bound to the logical
-    // authority must be delivered; one bound to the transport host must not.
     let chain = format!(
         "
 - filter: router
@@ -1158,10 +1144,6 @@ async fn subrequest_sends_logical_authority_as_host_not_transport() {
     let (addr, backend) =
         spawn_capturing_backend("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok", Arc::clone(&captured)).await;
 
-    // The cluster overrides the logical authority (`api.internal`); its transport
-    // endpoint is `127.0.0.1:<port>`. Mirroring the normal proxy path's authority
-    // override, the upstream must receive the logical authority as its Host — not
-    // the transport address, and not a stale inbound Host.
     let chain = format!(
         "
 - filter: router
@@ -1186,7 +1168,6 @@ async fn subrequest_sends_logical_authority_as_host_not_transport() {
     let executor =
         crate::FilteredSubrequestExecutor::for_callout(client, downstream, 0, 1_048_576, Duration::from_secs(5));
 
-    // A stale inbound Host must not survive an authority override.
     let mut headers = HeaderMap::new();
     headers.insert(http::header::HOST, http::HeaderValue::from_static("stale.example.com"));
     let request = crate::SubRequest {
@@ -1234,10 +1215,6 @@ async fn subrequest_credential_injection_pins_host_to_credential_authority() {
     let (addr, backend) =
         spawn_capturing_backend("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok", Arc::clone(&captured)).await;
 
-    // No authority override: the credential is authorized against the transport
-    // endpoint. A stale inbound Host must NOT survive to the upstream, or a
-    // shared-vhost endpoint could route the injected secret to a different vhost
-    // than the one the credential was authorized for.
     let chain = format!(
         "
 - filter: router
@@ -1323,12 +1300,6 @@ async fn subrequest_unmatched_staged_credential_preserves_custom_host() {
     let (addr, backend) =
         spawn_capturing_backend("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok", Arc::clone(&captured)).await;
 
-    // No authority override: the logical authority equals the transport endpoint.
-    // A credential is staged, but bound to a *different* authority that never
-    // matches this destination, so nothing is injected. A caller-set Host that
-    // selects a virtual host must survive untouched — pinning the Host to the
-    // transport only when a secret is actually delivered, never for a staged
-    // credential that matched nothing.
     let chain = format!(
         "
 - filter: router
@@ -1855,7 +1826,6 @@ async fn run_streaming_enforces_response_byte_ceiling() {
     let mut entries: Vec<crate::FilterEntry> = serde_yaml::from_str(&routed_chain_yaml(addr, "")).unwrap();
     let pipeline = Arc::new(crate::FilterPipeline::build(&mut entries, &registry).unwrap());
 
-    // A ceiling below the upstream chunk size forces the body to reject it.
     let executor = streaming_executor(3);
     let request = crate::SubRequest {
         method: http::Method::GET,
@@ -1891,8 +1861,6 @@ async fn run_streaming_ceiling_breach_ends_the_stream() {
         time::{Duration, Instant},
     };
 
-    // A 20-byte upstream body (hex chunk length 14), behind a chain whose
-    // completion hook emits a 14-byte terminal event at EOF.
     let (addr, backend) = spawn_raw_backend(
         "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n14\r\nAAAAAAAAAAAAAAAAAAAA\r\n0\r\n\r\n",
     )
@@ -1902,12 +1870,6 @@ async fn run_streaming_ceiling_breach_ends_the_stream() {
         serde_yaml::from_str(&routed_chain_yaml(addr, "- filter: test_terminal_event\n")).unwrap();
     let pipeline = Arc::new(crate::FilterPipeline::build(&mut entries, &registry).unwrap());
 
-    // 20 bytes of body cannot fit under a 15-byte ceiling however the upstream
-    // frames it, so some chunk must be rejected. A rejected chunk is never
-    // emitted and so never advances `emitted_bytes` — leaving room for the
-    // 14-byte completion event to pass the check afterwards. A stream that kept
-    // running would therefore resume around the hole and hand the caller a body
-    // with a gap in it instead of an error-terminated one.
     let executor = streaming_executor(15);
     let request = crate::SubRequest {
         method: http::Method::GET,
@@ -1926,7 +1888,6 @@ async fn run_streaming_ceiling_breach_ends_the_stream() {
         crate::CalloutResponse::Buffered(_) => panic!("the chain selected streaming mode"),
     };
 
-    // Pull until the ceiling rejects a chunk, whatever framing the upstream used.
     let mut breach = None;
     for _ in 0_u8..32 {
         match body.next_chunk().await {
@@ -1968,7 +1929,6 @@ async fn run_streaming_surfaces_unhandled_upstream_termination() {
 
     use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
-    // Chunked framing that promises a large chunk, then closes mid-payload.
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let backend = tokio::spawn(async move {
@@ -2075,8 +2035,6 @@ async fn run_streaming_suppress_error_preserves_parent_extensions() {
     let (addr, backend) =
         spawn_raw_backend("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n").await;
     let registry = callout_registry();
-    // The completion filter rejects at end-of-stream, so `suppress` (which runs
-    // the completion lifecycle) fails.
     let mut entries: Vec<crate::FilterEntry> =
         serde_yaml::from_str(&routed_chain_yaml(addr, "- filter: test_reject_on_completion")).unwrap();
     let pipeline = Arc::new(crate::FilterPipeline::build(&mut entries, &registry).unwrap());
@@ -2101,16 +2059,12 @@ async fn run_streaming_suppress_error_preserves_parent_extensions() {
         crate::CalloutResponse::Buffered(_) => panic!("the chain selected streaming mode"),
     };
 
-    // Suppressing the body runs the completion lifecycle, which the guardrail
-    // rejects, so `suppress` surfaces an error.
     let suppressed = body.suppress().await;
     assert!(
         suppressed.is_err(),
         "a completion-phase rejection must surface from suppress: {suppressed:?}"
     );
 
-    // Despite the error, the caller-injected extension must survive the body's
-    // inner->held transition so the parent request context can recover it.
     let mut parent = crate::RequestExtensions::default();
     body.swap_extensions(&mut parent);
     backend.abort();
@@ -2143,7 +2097,6 @@ async fn streaming_response_body_context_inherits_parent_session_stores() {
     let saw_on_request = Arc::new(AtomicBool::new(false));
     let saw_on_response_body = Arc::new(AtomicBool::new(false));
 
-    // The streaming harness needs the streaming selector plus the recorder.
     let mut registry = callout_registry();
     {
         let saw_on_request = Arc::clone(&saw_on_request);

@@ -419,11 +419,11 @@ mod tests {
         assert!(matches!(on_shutdown_change(true, false), ShutdownAction::KeepPolling));
         assert!(
             matches!(on_shutdown_change(false, false), ShutdownAction::StopPolling),
-            "a dropped sender must stop polling, not spin"
+            "a dropped sender (changed() -> Err) must stop polling, not spin"
         );
         assert!(
             matches!(on_shutdown_change(false, true), ShutdownAction::StopPolling),
-            "a dropped sender must stop polling, not spin"
+            "a dropped sender must stop polling regardless of the last observed value"
         );
     }
 

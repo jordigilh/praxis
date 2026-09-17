@@ -41,9 +41,9 @@ the certificate via SNI using `ReloadableCertResolver`
 (`crates/tls/src/`), which supports hot-reload via `ArcSwap`.
 
 Relevant files:
-- `crates/tls/src/sni.rs` — SNI resolution
-- `crates/tls/src/reload.rs` — certificate hot-reload
-- `crates/protocol/src/http/pingora/handler/` — HTTP handler
+- `crates/tls/src/sni.rs`: SNI resolution
+- `crates/tls/src/reload.rs`: certificate hot-reload
+- `crates/protocol/src/http/pingora/handler/`: HTTP handler
 
 ## Step 2: Protocol Detection
 
@@ -75,8 +75,8 @@ pointer, while requests already holding a guard
 continue on the old pipeline.
 
 Relevant files:
-- `crates/protocol/src/pipelines.rs` — `ListenerPipelines`
-- `crates/server/src/reload.rs` — reload orchestration
+- `crates/protocol/src/pipelines.rs`: `ListenerPipelines`
+- `crates/server/src/reload.rs`: reload orchestration
 
 ## Step 4: Request Filter Execution
 
@@ -180,7 +180,7 @@ Relevant file:
 
 Response filters execute in **reverse order** (last
 filter first). Only filters that actually executed
-during Step 4 run — filters skipped by conditions
+during Step 4 run. Filters skipped by conditions
 or `SkipTo` are also skipped in the response phase,
 and in the request-body and response-body phases.
 

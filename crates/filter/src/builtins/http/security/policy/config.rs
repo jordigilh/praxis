@@ -88,7 +88,7 @@ pub(crate) struct PolicyFilterConfig {
     /// use their own gates instead.
     ///
     /// JSON-RPC methods that legitimately carry no entity (e.g.
-    /// `tools/list`, `initialize`, `prompts/list`) still pass —
+    /// `tools/list`, `initialize`, `prompts/list`) still pass;
     /// `require_protocol_metadata` only rejects when the metadata is
     /// missing entirely.
     #[serde(default = "default_true")]
@@ -99,7 +99,7 @@ pub(crate) struct PolicyFilterConfig {
     pub llm: LlmOptions,
 }
 
-/// Default for `require_protocol_metadata`.
+/// Serde default for `require_protocol_metadata`: `true`.
 fn default_true() -> bool {
     true
 }

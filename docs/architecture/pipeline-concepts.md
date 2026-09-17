@@ -112,7 +112,7 @@ read them.
    `ctx.filter_results` under its type name
 2. After the filter runs, branch conditions check
    these results
-3. Results are **cleared** after branch evaluation —
+3. Results are **cleared** after branch evaluation;
    they do not persist to later filters
 
 **Keying**: results are stored under the filter's
@@ -147,7 +147,7 @@ different phases:
 | `on_result` | After filter, before next | `on_result:` on branch chain | Filter result key-value pairs |
 
 Request conditions and response conditions are
-independent — a filter can have both. Branch
+independent; a filter can have both. Branch
 conditions (`on_result`) are evaluated after the
 filter runs but before the pipeline advances.
 

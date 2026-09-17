@@ -6,8 +6,7 @@
 //! [`PipelineFilter`] wraps an [`AnyFilter`] together with its
 //! request/response conditions, failure mode, optional user name,
 //! and resolved branch chains. It is the unit of execution in the
-//! pipeline's while-loop: the executor reads conditions to decide
-//! whether to invoke the filter, then evaluates branches afterward.
+//! pipeline.
 //!
 //! [`AnyFilter`]: crate::any_filter::AnyFilter
 

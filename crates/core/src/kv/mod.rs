@@ -57,8 +57,7 @@ pub enum MatchType {
 /// optimized for concurrent reads. Writes may occur from
 /// admin API requests and filter execution.
 ///
-/// Keys and values use [`Arc<str>`] so multiple threads can
-/// hold read handles to the same data concurrently.
+/// Keys and values use [`Arc<str>`].
 ///
 /// # Accessing from a filter
 ///

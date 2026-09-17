@@ -372,7 +372,7 @@ async fn run_pipeline(
 /// request snapshot; rejections issued before the pipeline runs (Host
 /// validation, header normalization, reserved-header and Max-Forwards
 /// handling) would otherwise leave it unset and the record silently
-/// skipped — precisely the requests operators most want logged.
+/// skipped: precisely the requests operators most want logged.
 fn snapshot_for_early_exit(session: &mut Session, ctx: &mut PingoraRequestCtx) {
     if ctx.request_snapshot.is_none() {
         ctx.request_snapshot = Some(request_header_from_session(session));
@@ -912,13 +912,13 @@ fn apply_pre_read_mutations(session: &mut Session, request: &mut Request, mutati
 /// prior value, a set establishes a new one, and adds follow.
 ///
 /// `extra` uses replace semantics here because that is what the session
-/// receives (`insert_header`). Note this differs from the pre-read body
-/// phase, where the same context field is drained into
-/// [`TrustedHeaderMutation::Add`] and appended. The two phases serve
-/// different filters — `request_id` re-emits a client-supplied ID as an
-/// extra header and would duplicate it under append semantics, while
-/// pre-read body filters accumulate — so the divergence is deliberate
-/// and must not be "unified" without auditing both sets of callers.
+/// receives (`insert_header`). This differs from the pre-read body phase,
+/// where the same context field is drained into
+/// [`TrustedHeaderMutation::Add`] and appended. The divergence is
+/// deliberate: `request_id` re-emits a client-supplied ID as an extra
+/// header and would duplicate it under append semantics, while pre-read
+/// body filters accumulate. Do not "unify" the two without auditing both
+/// sets of callers.
 ///
 /// [`HttpFilterContext::pending_header_value`]: praxis_filter::HttpFilterContext::pending_header_value
 fn apply_pending_header_mutations(

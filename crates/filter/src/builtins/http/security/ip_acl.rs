@@ -190,7 +190,10 @@ mod tests {
     fn deny_all_ipv4_wildcard_also_blocks_native_ipv6() {
         let f = make_filter(&[], &["0.0.0.0/0"]);
         let v6: IpAddr = "2001:db8::1".parse().unwrap();
-        assert!(!f.is_allowed(&v6), "deny 0.0.0.0/0 should also block native IPv6");
+        assert!(
+            !f.is_allowed(&v6),
+            "deny 0.0.0.0/0 should also block a native IPv6 peer on a dual-stack listener"
+        );
     }
 
     #[test]

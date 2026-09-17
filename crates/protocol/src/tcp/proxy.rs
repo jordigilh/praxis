@@ -638,7 +638,7 @@ fn handle_sni_read(buf: &mut Vec<u8>, filled: usize, reassembler: &mut Option<sn
 /// Attempt to parse SNI from the filled portion of the buffer.
 ///
 /// The first attempt uses the stateless parser; an incomplete result
-/// switches to the resumable reassembler for later reads.
+/// then switches to the resumable reassembler for later reads.
 #[expect(clippy::indexing_slicing, reason = "filled <= buf.len() maintained by caller")]
 fn try_parse_sni(buf: &[u8], filled: usize, reassembler: &mut Option<sni::SniReassembler>) -> SniPeekResult {
     let data = &buf[..filled];

@@ -128,8 +128,8 @@ pub(crate) fn is_websocket_upgrade(value: &str) -> bool {
 /// client smuggle a second protocol past the WebSocket check: a request
 /// carrying `Upgrade: websocket` followed by `Upgrade: h2c` would be seen
 /// as a clean WebSocket upgrade, and [`preserve_for_upgrade`] would then
-/// forward the entire (multi-valued) `Upgrade` header — including the
-/// `h2c` token — to the backend, defeating the h2c-smuggling protection.
+/// forward the entire multi-valued `Upgrade` header (including the `h2c`
+/// token) to the backend, defeating the h2c-smuggling protection.
 pub(crate) fn has_websocket_upgrade(headers: &HeaderMap) -> bool {
     let mut values = headers.get_all(http::header::UPGRADE).iter();
     match (values.next(), values.next()) {

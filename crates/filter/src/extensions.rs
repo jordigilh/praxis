@@ -8,7 +8,8 @@
 //! Pingora lifecycle phases (request, request body, response,
 //! response body, logging).
 //!
-//! The framework has no knowledge of what filters store in it.
+//! The framework has no knowledge of what filters store in it; when
+//! unused it holds an empty [`HashMap`].
 //!
 //! Only one value per concrete type can be stored. Filters must use
 //! private newtypes for their state, not bare types like

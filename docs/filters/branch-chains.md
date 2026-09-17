@@ -102,7 +102,7 @@ a filter entry:
 ```
 
 **`on_result.filter`** must name the **host filter**
-the branch is attached to — its filter **type name**
+the branch is attached to: its filter **type name**
 (the return value of `HttpFilter::name()`, e.g.
 `"guardrails"`), not the user-assigned `name:` on the
 entry, and not some other filter in the chain. A
@@ -156,14 +156,14 @@ exceeded, the branch falls through to `Continue`.
 Branch chains reference filters via `chains:`, which
 accepts two formats:
 
-**Named reference** — points to a top-level chain:
+**Named reference** points to a top-level chain:
 
 ```yaml
 chains:
   - utility_chain
 ```
 
-**Inline definition** — defines filters directly:
+**Inline definition** defines filters directly:
 
 ```yaml
 chains:
@@ -192,7 +192,7 @@ See `examples/configs/branching/unconditional-branch.yaml`.
 
 ### Conditional Terminal
 
-Short-circuit on a condition — block and respond
+Short-circuit on a condition to block and respond
 without reaching the backend:
 
 ```yaml

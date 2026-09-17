@@ -260,8 +260,7 @@ fn apply_operations<'a>(
 // Apply Manipulations
 // -----------------------------------------------------------------------------
 
-/// Apply a single regex replacement to a path, preserving the
-/// borrowed variant when no match occurs.
+/// Apply a single regex replacement to a path.
 fn apply_regex<'a>(path: Cow<'a, str>, pattern: &Regex, replacement: &str) -> Cow<'a, str> {
     let replaced = pattern.replace_all(&path, replacement);
     match replaced {
@@ -415,7 +414,8 @@ fn strip_params(qs: &str, remove: &HashSet<String>) -> String {
         .join("&")
 }
 
-/// Append a pre-encoded parameter suffix to a query string.
+/// Append a pre-encoded parameter suffix to a query string
+/// (encoding happened once at config load).
 fn append_encoded_params(qs: &str, encoded: &str) -> String {
     if encoded.is_empty() {
         return qs.to_owned();

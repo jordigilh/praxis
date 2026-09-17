@@ -211,9 +211,9 @@ fn put_update_replaces_endpoint_without_duplicate_entry() {
     assert_eq!(
         store.get("key1").as_deref(),
         Some("ep2"),
-        "an update must replace the endpoint in place"
+        "update should replace the endpoint in place"
     );
-    assert_eq!(store.len(), 1, "an update must not create a duplicate entry");
+    assert_eq!(store.len(), 1, "update must not create a duplicate map entry");
 }
 
 #[test]
@@ -226,9 +226,9 @@ fn opportunistic_sweep_fires_after_half_ttl() {
 
     assert!(
         store.get("a").is_none(),
-        "an expired entry should miss and trigger an opportunistic sweep"
+        "expired 'a' should be gone, and the miss should trigger a sweep"
     );
-    assert_eq!(store.len(), 0, "the sweep should also remove the other expired entry");
+    assert_eq!(store.len(), 0, "the opportunistic sweep should also remove expired 'b'");
 }
 
 // -----------------------------------------------------------------------------

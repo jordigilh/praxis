@@ -34,8 +34,8 @@ endpoint receives traffic proportional to its weight.
 This is the simplest strategy and works well when
 backends are homogeneous and request cost is uniform.
 
-With equal weights, this produces an even 1:1:1
-distribution.
+With equal weights, round-robin produces an even
+1:1:1 distribution across endpoints.
 
 ```yaml
 clusters:

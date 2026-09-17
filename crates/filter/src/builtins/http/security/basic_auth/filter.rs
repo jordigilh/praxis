@@ -125,7 +125,8 @@ pub struct BasicAuthFilter {
 }
 
 impl BasicAuthFilter {
-    /// Resolves inline credentials at construction time.
+    /// Builds the filter from parsed config, resolving inline
+    /// credentials up front.
     ///
     /// # Errors
     ///
@@ -194,6 +195,9 @@ impl HttpFilter for BasicAuthFilter {
 
 /// Decode a `Basic` Authorization header into the decoded credential
 /// string and the index of its first colon.
+///
+/// Decoding runs before any credential comparison, keeping the
+/// constant-time verification untouched.
 fn decode_basic_credentials(header: &http::HeaderValue) -> Option<(String, usize)> {
     let auth_str = header.to_str().ok()?;
 
@@ -216,10 +220,6 @@ fn decode_basic_credentials(header: &http::HeaderValue) -> Option<(String, usize
 
 /// Constant-time password hash check with dummy comparison for unknown
 /// users to prevent timing-based user enumeration.
-///
-/// Both inputs are `[u8; 32]` SHA-256 digests, so `ct_eq` always
-/// performs a full 32-byte comparison without short-circuiting on
-/// length mismatch.
 fn verify_password_hash(provided: &[u8; 32], stored: Option<&[u8; 32]>) -> bool {
     const DUMMY_HASH: [u8; 32] = [0_u8; 32];
     let expected = stored.unwrap_or(&DUMMY_HASH);

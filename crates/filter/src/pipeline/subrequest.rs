@@ -3,7 +3,7 @@
 
 //! Iterative-router types and constants for sub-request execution.
 //!
-//! The transport executor now lives in
+//! The transport executor lives in
 //! [`praxis_core::subrequest::SubRequestClient`]. This module retains
 //! only the IRR-specific iteration state, depth tracking, and
 //! response-limit defaults.

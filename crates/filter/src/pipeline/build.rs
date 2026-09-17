@@ -37,7 +37,7 @@ use crate::{FilterError, any_filter::AnyFilter, registry::FilterRegistry};
 impl FilterPipeline {
     /// Build a pipeline by instantiating each filter entry via the registry.
     ///
-    /// Conditions are moved out of `entries`; after this call, each entry's
+    /// Moves conditions out of each entry, so after this call every entry's
     /// condition vecs are empty.
     ///
     /// # Errors

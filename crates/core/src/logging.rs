@@ -540,9 +540,7 @@ fn build_http_exporter(
 ///
 /// When an endpoint like `http://host:4317` or `http://host:4317/` is
 /// configured, the programmatic HTTP exporter does not automatically append
-/// the signal path (unlike env-var based configuration). This function
-/// detects endpoints with no meaningful path and appends the standard
-/// OTLP traces signal path.
+/// the signal path (unlike env-var based configuration).
 #[cfg(feature = "otel")]
 fn append_signal_path_if_needed(endpoint: &str) -> String {
     // Parse the endpoint; if invalid, return as-is (the builder will error later)

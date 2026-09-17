@@ -128,6 +128,8 @@ pub(crate) fn apply_rewritten_path(req: &mut RequestHeader, ctx: &PingoraRequest
 /// - **URI authority**: Defence-in-depth for absolute-form requests whose URI already contains an authority. Without
 ///   this, a pre-existing URI authority could survive into the upstream request if Pingora's internal flow changes.
 ///
+/// The authority `HeaderValue` is pre-parsed at cluster build time.
+///
 /// Called after hop-by-hop and reserved-header stripping so that
 /// a downstream-supplied `Host` value cannot survive into the
 /// upstream request when an override is configured.

@@ -50,7 +50,7 @@ impl RateLimitFilter {
         (format!("{remaining_int}"), format!("{reset_unix}"), retry_secs)
     }
 
-    /// Numeric form of [`rate_limit_values`], for the hot response path:
+    /// Numeric form of [`rate_limit_values`] for the hot response path:
     /// `(remaining, reset_unix, retry_secs)`.
     ///
     /// [`rate_limit_values`]: Self::rate_limit_values

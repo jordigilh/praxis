@@ -17,8 +17,8 @@ and `response_body_mode()`. Three variants exist:
 
 **Stream** (default): chunks pass through filters and
 forward to upstream as they arrive. Lowest latency and
-memory. The global `body_limits` ceiling still applies
-— even when a filter selects `Stream` mode, the
+memory. The global `body_limits` ceiling still applies:
+even when a filter selects `Stream` mode, the
 handler counts bytes and rejects (413 request / abort
 response) once the running total exceeds the ceiling.
 The ceiling can only be lifted with

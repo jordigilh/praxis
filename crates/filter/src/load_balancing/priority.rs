@@ -198,7 +198,7 @@ mod tests {
         }
         assert!(
             seen.contains("10.0.0.3:80") || seen.contains("10.0.0.4:80"),
-            "should spill to failover tier"
+            "primary tier at 0/2 healthy (0%) is below the 71% threshold, so traffic should spill to the failover tier"
         );
     }
 
@@ -222,7 +222,7 @@ mod tests {
             assert_eq!(
                 selected.as_ref(),
                 "10.0.0.4:80",
-                "panic mode must route to the only tier with a healthy endpoint"
+                "with factor 100 (threshold 100%) no tier meets capacity, so panic mode must route to tier 1's only healthy endpoint"
             );
         }
     }
@@ -246,7 +246,7 @@ mod tests {
         }
         assert!(
             !seen.contains("10.0.0.4:80"),
-            "should stay in primary tier when above threshold"
+            "primary at 2/3 healthy (66%) is at or above the factor-200 threshold (50%), so traffic should stay in the primary tier"
         );
         assert!(!seen.contains("10.0.0.1:80"), "unhealthy primary should be skipped");
     }
@@ -261,7 +261,10 @@ mod tests {
         state.endpoints()[1].mark_unhealthy();
 
         let addr = pl.select(None, Some(&state), &[]).unwrap();
-        assert_eq!(&*addr, "10.0.0.3:80", "should reach third-priority tier");
+        assert_eq!(
+            &*addr, "10.0.0.3:80",
+            "tiers 0 and 1 are fully unhealthy, so selection should reach the third-priority tier"
+        );
     }
 
     #[test]

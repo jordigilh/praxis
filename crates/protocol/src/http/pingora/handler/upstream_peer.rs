@@ -202,7 +202,7 @@ fn apply_per_try_timeout(ctx: &PingoraRequestCtx, upstream: &mut Upstream) {
 /// Parse the upstream address and build an [`HttpPeer`] with TLS/SNI config.
 ///
 /// TLS certificates are already pre-parsed in the [`CachedClusterTls`]
-/// attached to the upstream.
+/// attached to the upstream, so this performs no filesystem I/O.
 ///
 /// When `sni` is `None`, derives it from the upstream address hostname
 /// (unless it is an IP address).

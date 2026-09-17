@@ -199,6 +199,8 @@ impl SseDecoder {
 
     /// Feed one body chunk; returns the records it completed and an optional
     /// error.
+    ///
+    /// Takes the chunk as [`Bytes`], the type Pingora hands body filters.
     pub fn push(&mut self, chunk: &Bytes) -> SseBatch {
         if let DecoderState::Finished = self.state {
             return SseBatch {

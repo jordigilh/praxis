@@ -260,7 +260,11 @@ mod tests {
             "c".repeat(63),
             "d".repeat(61),
         );
-        assert_eq!(hostname.len(), 253);
+        assert_eq!(
+            hostname.len(),
+            253,
+            "three 63-byte labels plus a 61-byte label and 3 dots sum to the 253-byte maximum"
+        );
         assert_eq!(validate_dns_hostname(&hostname), Ok(()));
     }
 

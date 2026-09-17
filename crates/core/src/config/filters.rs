@@ -206,7 +206,7 @@ pub struct FilterEntry {
 
     /// Filter-specific configuration passed to the factory function.
     ///
-    /// Holds every YAML key not handled by the named fields above
+    /// Collects every YAML key not handled by the named fields above
     /// (`filter`, `branch_chains`, `conditions`, `name`,
     /// `response_conditions`, `failure_mode`). A misspelled known field
     /// (e.g. `failuremode`) is silently absorbed here;

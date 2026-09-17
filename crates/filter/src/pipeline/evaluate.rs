@@ -43,6 +43,9 @@ use crate::{
 // -----------------------------------------------------------------------------
 
 /// Evaluate all branches on a filter, executing matching ones.
+///
+/// The branch-free case takes a synchronous fast path; nested branch
+/// recursion goes through [`evaluate_branches_boxed`].
 pub(crate) async fn evaluate_branches(
     branches: &[ResolvedBranch],
     ctx: &mut HttpFilterContext<'_>,

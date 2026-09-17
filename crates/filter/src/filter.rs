@@ -255,9 +255,8 @@ pub trait HttpFilter: Send + Sync {
     /// reload. A filter whose configuration lives entirely inside the Praxis
     /// config has nothing to declare.
     ///
-    /// Paths are returned as configured, not canonicalized: the watcher does its
-    /// own resolution because it has to handle symlinks and relative paths
-    /// consistently with how it already treats the main config.
+    /// Paths are returned as configured, not canonicalized; the watcher
+    /// resolves them itself.
     fn referenced_files(&self) -> Vec<std::path::PathBuf> {
         Vec::new()
     }

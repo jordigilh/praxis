@@ -184,7 +184,7 @@ mod tests {
         }
         assert!(
             seen.contains("10.0.0.4:80"),
-            "should spill to remote zone when local is degraded"
+            "1/3 local healthy (33%) is below the 70% threshold, so traffic should spill to the remote zone"
         );
     }
 
@@ -205,7 +205,10 @@ mod tests {
         for _ in 0..20 {
             seen.insert(za.select(None, Some(&state), &[]).unwrap());
         }
-        assert!(!seen.contains("10.0.0.4:80"), "should stay local when above threshold");
+        assert!(
+            !seen.contains("10.0.0.4:80"),
+            "2/3 local healthy (66%) is at or above the 50% threshold, so traffic should stay local"
+        );
         assert!(!seen.contains("10.0.0.1:80"), "unhealthy local should be skipped");
     }
 

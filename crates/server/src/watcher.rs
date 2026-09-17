@@ -564,8 +564,7 @@ fn backoff_duration(consecutive_failures: u32) -> Duration {
     Duration::from_secs(secs)
 }
 
-/// Compute a hash of file content for change detection.
-/// Hash of the main config plus every document it references.
+/// Hash of the main config plus every document it references, for change detection.
 ///
 /// Referenced documents have to be included, not just the main config. A filter
 /// that loads an external document would otherwise never pick up edits to it: the

@@ -100,9 +100,7 @@ pub struct PeerIdentityTrustFilter {
 
 /// Validated trusted peer entry for runtime matching.
 struct TrustedPeer {
-    /// SHA-256 certificate digest, hex-decoded at config load so the
-    /// per-request match is a byte compare instead of hex-encoding the
-    /// peer's digest once per configured entry.
+    /// SHA-256 certificate digest, hex-decoded at config load.
     cert_digest: Option<Vec<u8>>,
 
     /// X.509 subject organization.
@@ -114,9 +112,8 @@ struct TrustedPeer {
 
 /// Decode a validated 64-char lowercase hex digest into bytes.
 ///
-/// Validation has already guaranteed the exact length and charset, so
-/// this cannot fail; the encode/decode pair is bijective, preserving
-/// the accept/reject decisions of the old string compare exactly.
+/// Validation has already guaranteed the exact length and charset,
+/// so this cannot fail.
 fn decode_validated_hex(digest: &str) -> Vec<u8> {
     fn nibble(b: u8) -> u8 {
         match b {

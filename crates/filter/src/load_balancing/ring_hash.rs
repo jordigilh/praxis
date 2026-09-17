@@ -58,8 +58,8 @@ impl RingHash {
 
     /// Hash the key and return the corresponding healthy endpoint.
     ///
-    /// Skips unhealthy endpoints, falling back to a hashed position when every
-    /// endpoint is unhealthy.
+    /// Skips unhealthy endpoints, falling back to a panic-mode selection when
+    /// all are unhealthy.
     pub(crate) fn select(
         &self,
         hash_key: Option<&str>,

@@ -44,8 +44,7 @@ fn next_random(rng: &AtomicU64) -> u64 {
 /// Whether `addr` appears in a retry-exclusion list.
 ///
 /// Exclusion lists hold endpoints already attempted for this request, so a
-/// retry lands somewhere new. Kept here so composite and hash-ring
-/// strategies share one definition.
+/// retry lands somewhere new.
 pub(crate) fn is_excluded(addr: &str, exclude: &[std::sync::Arc<str>]) -> bool {
     exclude.iter().any(|e| e.as_ref() == addr)
 }

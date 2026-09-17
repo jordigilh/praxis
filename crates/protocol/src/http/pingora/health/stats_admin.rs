@@ -313,7 +313,7 @@ fn endpoint_rows(meta: &ClusterMeta, health_registry: Option<&HealthRegistry>) -
 
 /// Strip the body for HEAD. [`json_response`] sets `Content-Length` from the GET
 /// body; remove it after clearing the body so framing follows the empty vec
-/// (RFC 9110 §8.6 — do not send a misleading `Content-Length: 0`).
+/// (RFC 9110 §8.6: do not send a misleading `Content-Length: 0`).
 fn as_head_response(mut resp: Response<Vec<u8>>) -> Response<Vec<u8>> {
     *resp.body_mut() = Vec::new();
     resp.headers_mut().remove(http::header::CONTENT_LENGTH);

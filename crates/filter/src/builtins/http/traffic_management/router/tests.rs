@@ -189,7 +189,7 @@ fn from_config_rejects_route_retry_timeout_of_zero() {
     .unwrap();
 
     let Err(err) = RouterFilter::from_config(&yaml) else {
-        panic!("a route retry per_try_timeout_ms of 0 must be rejected");
+        panic!("a route retry per_try_timeout_ms of 0 must be rejected at config load, like a cluster policy");
     };
     assert!(
         err.to_string().contains("per_try_timeout_ms"),

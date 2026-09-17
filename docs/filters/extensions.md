@@ -102,7 +102,7 @@ filter_chains:
         some_option: "value"
 ```
 
-Rebuild and run — no other changes needed.
+Rebuild and run; no other changes needed.
 
 ### Duplicate Detection
 
@@ -431,11 +431,9 @@ handle the 500 response.
 
 Only declare `request_body_access()` or
 `response_body_access()` if your filter actually
-inspects or modifies the body. Each declaration changes
-how the pipeline buffers data. `BodyAccess::None` (the
-default) avoids overhead. Use `ReadOnly` if you inspect
-but do not modify, and `ReadWrite` only if you mutate
-chunks in place.
+inspects or modifies the body. Use `ReadOnly` if you
+inspect but do not modify, and `ReadWrite` only if you
+mutate chunks in place.
 
 ### Choose the right body mode
 

@@ -436,10 +436,7 @@ mod tests {
 
         store.put("c", "ep3".into());
 
-        assert!(
-            store.get("a").is_some(),
-            "recently-accessed 'a' should survive eviction"
-        );
+        assert!(store.get("a").is_some(), "recently accessed 'a' should survive");
         assert!(
             store.get("b").is_none(),
             "least-recently-accessed 'b' should be evicted"

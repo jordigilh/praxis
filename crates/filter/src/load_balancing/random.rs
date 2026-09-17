@@ -100,6 +100,9 @@ fn survey(
 
 /// Map a random value to a candidate endpoint via cumulative weight
 /// buckets, walking only endpoints that pass `candidate`.
+///
+/// The candidate subsequence keeps endpoint order, so a given draw always
+/// lands in the same bucket.
 #[expect(clippy::cast_possible_truncation, reason = "modulo total_weight bounds the result")]
 fn pick_where(
     endpoints: &[WeightedEndpoint],

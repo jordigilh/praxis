@@ -72,9 +72,9 @@ pub struct PingoraRequestCtx {
 
     /// Verified downstream TLS peer identity.
     ///
-    /// Set once in `request_filter` before the first filter runs.
-    /// Shared via [`Arc`] with each `HttpFilterContext`, so it is
-    /// available in both pre-read body phases and the main filter
+    /// Set once from the SSL digest in `request_filter` before the first
+    /// filter runs. Shared via [`Arc`] with each `HttpFilterContext` so it
+    /// is available in both pre-read body phases and the main filter
     /// pipeline. `None` for non-mTLS or no-client-cert connections.
     pub peer_identity: Option<Arc<praxis_tls::TlsPeerIdentity>>,
 
@@ -155,9 +155,8 @@ pub struct PingoraRequestCtx {
     /// context construction.
     pub metrics_cluster: Option<Arc<str>>,
 
-    /// Pre-built [`SharedString`] for the metrics cluster label.
-    ///
-    /// Cached when `metrics_cluster` is set.
+    /// Pre-built [`SharedString`] for the metrics cluster label, set
+    /// alongside `metrics_cluster`.
     ///
     /// [`SharedString`]: ::metrics::SharedString
     pub metrics_cluster_shared: Option<::metrics::SharedString>,
@@ -523,10 +522,6 @@ impl PingoraRequestCtx {
     /// The fallback covers early-failure paths where a lifecycle
     /// hook runs before `request_filter` (e.g. after
     /// `early_request_filter` rejection triggers `logging`).
-    ///
-    /// Per-body-chunk hooks (`request_body_filter`,
-    /// `response_body_filter`) call this on every chunk,
-    /// incurring one [`Arc::clone`] per invocation.
     ///
     /// [`ArcSwap`]: arc_swap::ArcSwap
     pub fn pipeline(&self, swap: &arc_swap::ArcSwap<FilterPipeline>) -> Arc<FilterPipeline> {

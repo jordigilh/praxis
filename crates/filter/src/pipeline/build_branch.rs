@@ -744,7 +744,7 @@ mod tests {
         let err = resolve_chain_filters(&mut top, &registry, &chains, 0, &InsecureOptions::default()).unwrap_err();
         assert!(
             err.to_string().contains("filter instances"),
-            "an unbounded named-reference fan-out must fail the build: {err}"
+            "a named-reference fan-out (~20^4 = 160k instances) exceeds the 100k ceiling and must fail the build: {err}"
         );
     }
 

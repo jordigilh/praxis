@@ -653,7 +653,7 @@ priority:
         assert_eq!(
             strategy,
             LoadBalancerStrategy::Simple(SimpleStrategy::LeastConnections),
-            "the single-key null-map form (as used by example configs) stays valid"
+            "the single-key null-map form used by example configs must stay valid"
         );
     }
 

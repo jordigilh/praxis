@@ -208,7 +208,7 @@ pub struct RateLimitFilter {
     /// Pre-formatted burst value for the `X-RateLimit-Limit` header.
     pub(self) burst_string: String,
 
-    /// Pre-validated `X-RateLimit-Limit` header value.
+    /// Pre-validated burst value for the `X-RateLimit-Limit` header.
     pub(self) burst_value: http::header::HeaderValue,
 
     /// Pre-built `X-RateLimit-Limit` header name.

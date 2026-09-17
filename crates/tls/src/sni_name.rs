@@ -218,7 +218,10 @@ mod tests {
     #[test]
     fn reject_overlong_wildcard_hostname() {
         let name = format!("*.{}.example.com", "a".repeat(240));
-        assert!(name.len() > 253);
+        assert!(
+            name.len() > 253,
+            "the '*.' prefix pushes the name past 253; the 252-char suffix alone would pass"
+        );
         assert_eq!(validate(&name), Err(SniNameError::TooLong));
     }
 

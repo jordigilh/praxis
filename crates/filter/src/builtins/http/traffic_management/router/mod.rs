@@ -406,7 +406,8 @@ fn resolve_routes(routes: Vec<RouterRouteConfig>) -> Vec<ResolvedRoute> {
 
 /// Exact → bare path; Prefix → `path*`.
 ///
-/// Labels are interned to `&'static str` shared across reloads.
+/// Labels are interned to `&'static str` so they can be shared across
+/// requests and reloads.
 fn path_match_metrics_label(path_match: &PathMatch) -> ::metrics::SharedString {
     match path_match {
         PathMatch::Exact { path } => ::metrics::SharedString::const_str(intern_route_label(path)),

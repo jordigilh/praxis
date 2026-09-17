@@ -642,7 +642,7 @@ mod tests {
         assert_eq!(
             p.origin_form.to_string(),
             "/?token=x",
-            "a query-only URL must default the empty path to `/`"
+            "an empty path with a query must default to /, not the leading-slash-less ?token=x"
         );
     }
 
@@ -713,7 +713,7 @@ mod tests {
                 parse_target("https://[127.0.0.1]/"),
                 Err(InvalidTarget::InvalidHost(t)) if t == "127.0.0.1"
             ),
-            "brackets denote an IPv6 literal per RFC 3986; a bracketed IPv4 is malformed"
+            "brackets denote an IPv6 literal (RFC 3986); a bracketed IPv4 is the malformed Host [127.0.0.1]"
         );
     }
 
@@ -979,7 +979,7 @@ mod tests {
             .expect_err("empty resolved set");
         assert!(
             matches!(err, UrlTargetError::Resolve(AddressResolutionError::Empty(_))),
-            "got {err:?}"
+            "a zero-address DNS answer must be a clean Resolve(Empty), not a peerless target: {err:?}"
         );
         assert_eq!(fake.call_count(), 1, "the DNS host must hit the resolver exactly once");
     }

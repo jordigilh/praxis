@@ -179,8 +179,8 @@ impl PowerOfTwoChoices {
         *candidates.last().expect("candidates must be non-empty")
     }
 
-    /// Candidate positions in one pass: healthy-and-not-excluded when
-    /// any endpoint is healthy, else all not-excluded (panic mode).
+    /// Candidate positions: healthy-and-not-excluded when any endpoint is
+    /// healthy, else all not-excluded (panic mode).
     fn candidate_positions(&self, health: Option<&ClusterHealthState>, exclude: &[Arc<str>]) -> SmallVec<[usize; 8]> {
         if let Some(state) = health {
             let mut candidates: SmallVec<[usize; 8]> = SmallVec::new();

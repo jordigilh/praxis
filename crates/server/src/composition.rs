@@ -38,7 +38,7 @@ use praxis_filter::{FilterPipeline, FilterRegistry, PipelineExtension};
 /// Builds the filter registry once at startup from immutable server context.
 ///
 /// [`FnOnce`] because [`FilterRegistry`] is not `Clone`: the registry is
-/// constructed a single time, wrapped in an `Arc`, and reused across reloads.
+/// constructed once and reused across reloads.
 type RegistryFactory = Box<dyn FnOnce(&RegistryContext<'_>) -> Result<FilterRegistry, CompositionError>>;
 
 /// Produces a fresh [`PipelineExtension`] for one listener pipeline.
@@ -237,9 +237,9 @@ impl<'ctx> ValidatorContext<'ctx> {
 
 /// The reload-durable half of a [`ServerComposition`].
 ///
-/// Holds the pipeline-extension factories and validators, applied on every
-/// rebuild. The default value applies no extensions and no validators, which
-/// is what the standard non-embedded server uses.
+/// Holds the pipeline-extension factories and validators applied on every
+/// rebuild. The default value applies no extensions and no validators, which is
+/// what the standard non-embedded server uses.
 #[derive(Clone, Default)]
 pub(crate) struct PipelineComposition {
     /// Factories producing a fresh extension per listener pipeline.

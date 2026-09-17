@@ -233,13 +233,13 @@ mod tests {
     #[test]
     fn max_tokens_respects_floor() {
         let b = budget(20.0, 10);
-        assert_eq!(b.max_tokens(10), 10, "10 active * 20% = 2, floored to 10");
+        assert_eq!(b.max_tokens(10), 10, "10 active * 20% = 2, floored up to 10");
     }
 
     #[test]
     fn try_acquire_decrements() {
         let b = budget(100.0, 5);
-        assert_eq!(b.available(), 5, "budget starts with min_retries_per_second tokens");
+        assert_eq!(b.available(), 5, "starts pre-filled to min_retries_per_second tokens");
         assert!(b.try_acquire());
         assert_eq!(b.available(), 4);
     }

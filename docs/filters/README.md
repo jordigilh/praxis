@@ -67,9 +67,8 @@ influence downstream processing:
 - `ctx.response_header`: mutate response headers and status
   directly in `on_response`.
 - `ctx.response_headers_modified`: optional hint that response
-  headers were changed. Setting it is not required for
-  correctness — the protocol layer detects header changes on
-  its own — it only lets the write-back skip a rebuild.
+  headers were changed. Not required for correctness; the
+  protocol layer detects changes on its own.
 
 ### Lifecycle Hooks
 
@@ -121,7 +120,7 @@ Filter chains are named, reusable groups of filters defined
 at the top level of the config. A listener references one or
 more chains by name; the filters are concatenated in order
 to form that listener's pipeline. This config-time assembly
-is called **pipelining** — it decides *what processing* a
+is called **pipelining**; it decides *what processing* a
 request receives. It is distinct from **routing**, where
 the `router` filter selects an upstream cluster at request
 time.
@@ -338,7 +337,7 @@ The `sni` field is populated by the TCP proxy when it peeks
 at the first bytes of a TLS connection and extracts the SNI
 hostname from the ClientHello. Filters like `sni_router` use
 this to select an upstream. The `upstream_addr` field is an
-`Option<Cow>` — `None` until a static upstream or filter
+`Option<Cow>`, `None` until a static upstream or filter
 provides one; filters can replace it with an owned value.
 The `cluster` field names the selected cluster, and
 `health_registry` / `kv_stores` provide access to shared

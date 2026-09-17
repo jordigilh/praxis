@@ -55,12 +55,13 @@ pub(super) struct ClusterEntry {
     /// Shared active-request counter and retry budget.
     pub(super) retry_state: Arc<ClusterRetryState>,
 
-    /// One-slot memo of the last route-override retry merge, keyed by
-    /// the route policy's [`Arc`] identity.
+    /// One-slot memo of the last route-override retry merge, keyed by the
+    /// route policy's [`Arc`] identity. Holding the route [`Arc`] both keys
+    /// the cache and pins its address against reuse.
     merged_retry_memo: ArcSwap<RetryMemoSlot>,
 
-    /// Lazily built reselector for the common case: no hash key, no
-    /// route retry override.
+    /// Lazily built reselector for the common case: no hash key and no
+    /// route retry override. The reselector is stateless config data.
     default_reselector: std::sync::OnceLock<Arc<EndpointReselector>>,
 }
 

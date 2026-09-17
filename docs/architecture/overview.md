@@ -86,9 +86,8 @@ reverse. Any filter can short-circuit, and multiple payload
 processing options are available to do filtering, routing,
 caching and load-balancing based on request or response bodies.
 
-See the [filter system documentation] for more extensive
-documentation, and the [extensions guide] for how to write
-your own.
+See the [filter system documentation] for details, and
+the [extensions guide] for how to write your own.
 
 [filter system documentation]:../filters/README.md
 [extensions guide]:../filters/extensions.md

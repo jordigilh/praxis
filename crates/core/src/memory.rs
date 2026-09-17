@@ -226,15 +226,15 @@ mod tests {
     fn sample_staleness_handles_forward_and_backward_clock() {
         assert!(
             !is_sample_stale(1_000, 1_000 + CHECK_INTERVAL_MS - 1),
-            "a sample within the interval is fresh"
+            "fresh within the interval is not stale"
         );
         assert!(
             is_sample_stale(1_000, 1_000 + CHECK_INTERVAL_MS),
-            "a sample is stale once the interval has elapsed"
+            "elapsed interval is stale"
         );
         assert!(
             is_sample_stale(1_000, 500),
-            "a backward clock step forces a refresh instead of freezing sampling"
+            "backward clock step is stale, so sampling resumes instead of freezing"
         );
     }
 

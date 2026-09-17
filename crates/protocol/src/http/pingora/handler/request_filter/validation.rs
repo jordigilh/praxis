@@ -47,7 +47,7 @@ pub(super) fn validate_host_header(session: &mut Session) -> Option<Rejection> {
 enum HostCheck {
     /// Single valid host header present (or absent on HTTP/1.0).
     Valid,
-    /// Duplicate identical hosts — caller should collapse to one.
+    /// Duplicate identical hosts; caller should collapse to one.
     Canonicalize(http::HeaderValue),
     /// Reject with the given status.
     Reject(Rejection),

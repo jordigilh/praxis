@@ -78,6 +78,9 @@ pub(super) fn compute_body_capabilities(filters: &[PipelineFilter]) -> BodyCapab
 }
 
 /// Precompute the pipeline indices of filters that declared body access.
+///
+/// The body-chunk loops run once per chunk; walking only these indices
+/// skips non-body filters without a per-chunk predicate check.
 pub(super) fn body_filter_indices(filters: &[PipelineFilter]) -> (Vec<usize>, Vec<usize>) {
     let mut request = Vec::new();
     let mut response = Vec::new();

@@ -66,7 +66,7 @@ impl Maglev {
     /// Hash the key and return the corresponding healthy endpoint.
     ///
     /// Skips unhealthy and excluded endpoints, falling back to the original
-    /// selection if all are unhealthy.
+    /// selection when all are unhealthy.
     pub(crate) fn select(
         &self,
         hash_key: Option<&str>,

@@ -282,7 +282,7 @@ mod tests {
             assert_eq!(
                 &*rr.select(Some(&state), &[]).unwrap(),
                 "10.0.0.2:80",
-                "must select the live endpoint by address, not by position"
+                "health is looked up by address, so reversing the LB order relative to the registry must still select the live endpoint, not the dead one by position"
             );
         }
     }

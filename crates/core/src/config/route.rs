@@ -472,7 +472,7 @@ cluster: "backend"
         assert_eq!(
             route.path_match.value(),
             "",
-            "the documented match-all prefix stays valid"
+            "the documented empty match-all prefix must stay valid"
         );
     }
 

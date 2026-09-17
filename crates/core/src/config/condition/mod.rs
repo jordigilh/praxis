@@ -15,9 +15,8 @@ pub use response::{ResponseCondition, ResponseConditionMatch};
 
 /// Generates a `Deserialize` impl for a when/unless condition enum.
 ///
-/// Both [`Condition`] and [`ResponseCondition`] follow the same
-/// structure: a helper struct with optional `when` and `unless`
-/// fields, matched into two variants with identical error arms.
+/// Both [`Condition`] and [`ResponseCondition`] share the same
+/// `when`/`unless` shape with two mutually exclusive variants.
 ///
 /// # Arguments
 ///

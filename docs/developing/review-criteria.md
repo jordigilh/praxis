@@ -172,7 +172,7 @@ in-flight drain all interact
   request is a race.
 - Old-generation cleanup: health-check tasks, KV stores,
   and metrics from the previous config must be cancelled
-  or carried over deliberately — never leaked, never
+  or carried over deliberately, never leaked, never
   double-running.
 - Non-reloadable changes (listener topology, protocol,
   TLS toggle) must be *detected* by the diff and warned;
@@ -180,7 +180,7 @@ in-flight drain all interact
   misses (`crates/server/src/reload_diagnostics.rs`).
 - Failure atomicity: a config that fails validation, or a
   cert that fails to load, must leave the old state fully
-  intact — including partially-applied side effects.
+  intact, including partially-applied side effects.
 - Guards across `.await`, task cancellation at shutdown,
   and drop order of runtime handles are worth a dedicated
   pass; the lints catch the easy cases only.
@@ -209,7 +209,7 @@ invariants are easy to break from a distance.
 
 - Ordering: request filters in declared order, response
   filters in reverse, short-circuits skip exactly the
-  right hooks — including body hooks on early responses.
+  right hooks, including body hooks on early responses.
 - Branch chains: rejoin targets, iteration limits, and the
   `on_request`-only restriction
   (`crates/filter/src/pipeline/branch.rs`,
@@ -275,7 +275,7 @@ correctness. Review what the suite would *fail to notice*.
   `cargo-semver-checks` findings gate releases.
 - Doc quality at the contract: every trait method should
   state its call ordering, its relationship to body modes,
-  and what a returned action does — the tutorial
+  and what a returned action does; the tutorial
   (`docs/filters/http-filter-tutorial.md`) must stay
   buildable against the current API.
 

@@ -505,7 +505,7 @@ mod tests {
     fn is_private_ip_unspecified_v6() {
         assert!(
             is_private_ip(&"::".parse().unwrap()),
-            ":: is the IPv6 unspecified address"
+            ":: (unspecified) must match the config-time is_ssrf_sensitive verdict: connecting to it lands on loopback"
         );
     }
 

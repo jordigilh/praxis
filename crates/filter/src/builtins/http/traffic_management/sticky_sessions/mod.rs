@@ -396,8 +396,7 @@ impl HttpFilter for StickySessionsFilter {
 
 /// Generate a stable, opaque session identifier from an endpoint address.
 ///
-/// Uses the standard library's `DefaultHasher` (`SipHash`) — not cryptographic,
-/// but sufficient for routing identifiers.
+/// Not cryptographic, but sufficient for routing identifiers.
 fn generate_session_id(endpoint: &str) -> String {
     use std::hash::{Hash as _, Hasher as _};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();

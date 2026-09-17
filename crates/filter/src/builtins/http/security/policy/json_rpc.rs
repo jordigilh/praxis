@@ -22,8 +22,7 @@ use ppe::praxis_policy_core::cmf::{
 
 /// A JSON-RPC body parsed once per filter phase.
 ///
-/// A missing or malformed body parses to `Null`, so every accessor
-/// falls back to its empty form.
+/// A missing or malformed body parses to `Null`.
 pub(super) struct ParsedEnvelope(serde_json::Value);
 
 impl ParsedEnvelope {
@@ -55,8 +54,7 @@ impl ParsedEnvelope {
 
     /// Consume the envelope, yielding the parsed DOM for rewriting.
     ///
-    /// A malformed body is `Null` here, so a reserializer's
-    /// `get_mut(..)` short-circuits and the rewrite is skipped.
+    /// A malformed body is `Null` here, short-circuiting the rewrite.
     pub(super) fn into_value(self) -> serde_json::Value {
         self.0
     }

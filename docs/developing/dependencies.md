@@ -87,13 +87,13 @@ organization behind it.
 
 `tokio`, `tokio-stream`, `tokio-util`,
 `tokio-rustls`, `bytes`, `tracing`,
-`tracing-subscriber`, `async-trait`, `h2`, `http` —
+`tracing-subscriber`, `async-trait`, `h2`, `http`,
 all maintained under the tokio / hyperium
 organizations that underpin most of async Rust.
 
 ### TLS and cryptography (rustls / RustCrypto)
 
-`rustls`, `rcgen`, `sha2`, `subtle`, `zeroize` —
+`rustls`, `rcgen`, `sha2`, `subtle`, `zeroize`,
 maintained by the rustls project and the RustCrypto
 organization.
 

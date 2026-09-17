@@ -51,8 +51,8 @@ impl ConsistentHash {
 
     /// Hash the key and return the corresponding healthy endpoint.
     ///
-    /// Skips unhealthy endpoints, falling back to the original selection if
-    /// all are unhealthy.
+    /// Skips unhealthy endpoints, falling back to the original selection
+    /// when all are unhealthy.
     pub(crate) fn select(
         &self,
         hash_key: Option<&str>,

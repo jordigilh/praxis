@@ -162,7 +162,8 @@ pub(crate) fn metric_labels() -> &'static MetricLabelsConfig {
 
 /// Build a label set, dropping the dimensions that are disabled.
 ///
-/// Only reached when at least one dimension is off.
+/// Only reached when at least one dimension is off; the all-enabled path
+/// uses the static-label macro form.
 fn selected_labels(pairs: &[(&'static str, Option<SharedString>)]) -> Vec<Label> {
     pairs
         .iter()
@@ -422,8 +423,8 @@ pub fn method_label(method: &str) -> &'static str {
 
 /// Labels for a completed HTTP request.
 ///
-/// `method` and `status_class` are static; `cluster` and `route`
-/// are dynamic [`SharedString`] values.
+/// Static labels (`method`, `status_class`) use `&'static str`;
+/// `cluster` and `route` are dynamic [`SharedString`] values.
 ///
 /// [`SharedString`]: ::metrics::SharedString
 pub(crate) struct RequestMetricLabels {
@@ -480,8 +481,8 @@ pub(crate) fn record_request_metrics(labels: RequestMetricLabels, duration_secs:
 
 /// Record request metrics with the full default label set.
 ///
-/// Emits exactly the series the default configuration produced before
-/// label selection existed.
+/// Kept on the static-label macro form so the default configuration emits
+/// exactly the series it did before label selection existed.
 fn record_request_metrics_all_labels(labels: RequestMetricLabels, duration_secs: f64) {
     let cluster = labels.cluster;
     let route = labels.route;

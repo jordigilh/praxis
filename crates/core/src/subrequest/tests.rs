@@ -1501,7 +1501,6 @@ async fn send_streaming_backpressure_blocks_producer() {
     use pingora_core::upstreams::peer::HttpPeer;
     use tokio::io::AsyncWriteExt as _;
 
-    // Large chunks to fill TCP send/receive buffers quickly.
     let chunk_count: usize = 500;
     let chunk_size: usize = 65_536; // 64 KiB per chunk
     let chunk_data = vec![b'X'; chunk_size];
@@ -1523,7 +1522,6 @@ async fn send_streaming_backpressure_blocks_producer() {
             socket.write_all(hex.as_bytes()).await.unwrap();
             socket.write_all(&chunk_data).await.unwrap();
             socket.write_all(b"\r\n").await.unwrap();
-            // flush each chunk — write_all blocks when TCP buffers are full.
             socket.flush().await.unwrap();
             chunks_sent_server.fetch_add(1, Ordering::SeqCst);
         }
@@ -1878,7 +1876,6 @@ async fn send_streaming_h2_cleartext_cancel_resets_stream_and_connection_survive
     assert_eq!(status, 200);
     Box::pin(body.cancel()).await;
 
-    // Allow RST_STREAM to propagate to the server.
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     let available = connector.admission.as_ref().unwrap().available_permits();
@@ -1990,7 +1987,6 @@ async fn send_streaming_h1_incomplete_body_not_reused() {
             connections_backend.fetch_add(1, Ordering::SeqCst);
             let mut buf = vec![0_u8; 4096];
             drop(tokio::io::AsyncReadExt::read(&mut socket, &mut buf).await);
-            // Send chunked response then drop mid-body (no terminating 0\r\n\r\n).
             let resp = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n\
                         5\r\nhello\r\n";
             socket.write_all(resp.as_bytes()).await.unwrap();
@@ -2068,7 +2064,6 @@ async fn send_streaming_h1_cancel_does_not_reuse_connection() {
                     }
                     let resp = "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n";
                     socket.write_all(resp.as_bytes()).await.unwrap();
-                    // Send chunks slowly — caller will cancel mid-stream.
                     for _ in 0..100 {
                         socket.write_all(b"5\r\nhello\r\n").await.unwrap();
                         socket.flush().await.unwrap();
@@ -2104,8 +2099,6 @@ async fn send_streaming_h1_cancel_does_not_reuse_connection() {
     assert!(chunk.is_some(), "should receive first chunk");
     Box::pin(body.cancel()).await;
 
-    // Second request — must open a new connection since H1 has
-    // unread response bytes on the cancelled connection.
     let StreamingSubResponse { mut body, .. } =
         Box::pin(client.send_streaming(&peer, &request, Duration::from_secs(5), limits, None))
             .await
@@ -2375,7 +2368,6 @@ async fn execute_maps_mid_body_disconnect_to_io_error() {
         let (mut socket, _) = listener.accept().await.unwrap();
         let mut buf = vec![0_u8; 4096];
         let _bytes_read = socket.read(&mut buf).await;
-        // Chunked framing, then hard close mid-chunk.
         socket
             .write_all(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nff\r\npartial")
             .await
@@ -2743,9 +2735,6 @@ async fn excessive_interim_1xx_responses_are_rejected() {
     use pingora_core::upstreams::peer::HttpPeer;
     use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
-    // A backend streaming an endless run of interim responses must not pin
-    // the client in the skip loop until the deadline: past the interim cap
-    // the sub-request fails fast with an explicit error.
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let backend = tokio::spawn(async move {

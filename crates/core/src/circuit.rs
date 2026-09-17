@@ -453,8 +453,7 @@ impl CircuitBreaker {
 pub struct PeerKey {
     /// Socket address of the peer.
     addr: SocketAddr,
-    /// TLS SNI, empty when not applicable. Shared so the clone the
-    /// registry guard retains is a refcount bump, not a re-allocation.
+    /// TLS SNI, empty when not applicable.
     sni: std::sync::Arc<str>,
 }
 

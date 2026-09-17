@@ -56,8 +56,7 @@ pub(super) fn build_op(operation: PathRewriteOperation) -> Result<PathRewriteOp,
 // Rewrite Logic
 // -----------------------------------------------------------------------------
 
-/// Apply the rewrite operation to a path, returning a borrowed path
-/// when no rewrite occurs or an owned path when it does.
+/// Apply the rewrite operation to a path.
 pub(super) fn rewrite_path<'a>(op: &PathRewriteOp, path: &'a str) -> Cow<'a, str> {
     match op {
         PathRewriteOp::StripPrefix(prefix) => strip_prefix(path, prefix),

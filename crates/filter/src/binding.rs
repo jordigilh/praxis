@@ -767,9 +767,6 @@ mod tests {
         let mut registry = FilterRegistry::with_builtins();
         register_probe(&mut registry, Arc::clone(&sink));
 
-        // A non-cyclic line c0 -> c1 -> ... -> c10 exceeds the nesting cap;
-        // no name repeats, so cycle detection does not fire and the depth
-        // limit is what must reject the build.
         let names: Vec<String> = (0..=MAX_OUTBOUND_CHAIN_DEPTH).map(|i| format!("c{i}")).collect();
         let owned: Vec<Vec<FilterEntry>> = (0..=MAX_OUTBOUND_CHAIN_DEPTH)
             .map(|i| entries(&format!("- filter: test_callout\n  outbound_chain: c{}\n", i + 1)))
@@ -796,10 +793,6 @@ mod tests {
 
     #[test]
     fn inline_outbound_chain_ssrf_endpoint_rejected() {
-        // An inline cluster reachable only through an outbound chain must be
-        // gated by the same SSRF rules as a top-level `clusters:` list. With the
-        // strict default posture, an endpoint resolving to a loopback address
-        // must fail the build instead of silently bypassing the check.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -830,9 +823,6 @@ mod tests {
 
     #[test]
     fn inline_outbound_chain_ssrf_endpoint_allowed_with_flag() {
-        // The same chain must build when the operator opts in to private
-        // endpoints, proving the gate is threaded from the declared posture and
-        // not an unconditional rejection.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -850,10 +840,6 @@ mod tests {
 ",
         );
         let chains = HashMap::new();
-        // Opt in to the private endpoint (the concern under test) and skip the
-        // unrelated lb-without-router ordering check so a lone load_balancer —
-        // the minimal cluster-bearing chain — does not fail for a reason other
-        // than SSRF gating.
         let insecure = InsecureOptions {
             allow_private_endpoints: true,
             skip_pipeline_checks: SkipPipelineChecks {
@@ -872,11 +858,6 @@ mod tests {
 
     #[test]
     fn outbound_binding_does_not_reset_materialization_budget() {
-        // Each outbound chain fans out to ~59k filter instances — comfortably
-        // under the 100k ceiling on its own. Binding two of them in one build
-        // materializes ~118k total. If binding reset the budget, a config could
-        // split an unbounded fan-out across binding boundaries and evade the
-        // ceiling entirely, so the budget must be shared across the whole build.
         let mut registry = FilterRegistry::with_builtins();
         register_probe(&mut registry, Arc::new(Mutex::new(None)));
 
@@ -884,7 +865,7 @@ mod tests {
         let c1 = fanout_chain("leaf", 20, "b1");
         let c2 = fanout_chain("c1", 20, "b2");
         let c3 = fanout_chain("c2", 20, "b3");
-        let outbound = fanout_chain("c3", 7, "b_out"); // 1 + 7*8421 = 58_948 instances
+        let outbound = fanout_chain("c3", 7, "b_out");
         let chains: HashMap<&str, &[FilterEntry]> = HashMap::from([
             ("leaf", leaf.as_slice()),
             ("c1", c1.as_slice()),
@@ -947,11 +928,6 @@ mod tests {
 
     #[test]
     fn outbound_bindings_share_total_branch_budget() {
-        // Two outbound bindings, each defining 144 branch chains — comfortably
-        // under the 256 ceiling on its own, but 288 together. If binding reset
-        // the branch count, a config could split an unbounded branch count across
-        // binding boundaries and evade the ceiling entirely, so the total must be
-        // shared across the whole build.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -976,18 +952,12 @@ mod tests {
 
     #[test]
     fn outbound_binding_branch_budget_counts_listener_branches() {
-        // The listener pipeline already defines 144 branch chains at its top
-        // level, and a single outbound binding adds 144 more. Neither exceeds the
-        // ceiling alone, but 288 together must. The bound chain's budget must be
-        // seeded with the branches already present in the listener config, not
-        // start from zero.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
         let utility = entries("- filter: headers\n");
         let chains: HashMap<&str, &[FilterEntry]> = HashMap::from([("utility", utility.as_slice())]);
 
-        // 144 branch chains at the listener top level (9 filters x 16 branches).
         let mut listener_branches = {
             use std::fmt::Write as _;
             let mut s = String::new();
@@ -1004,7 +974,6 @@ mod tests {
             }
             s
         };
-        // One outbound binding that adds another 144 branch chains.
         listener_branches.push_str(&outbound_callout_with_branches(144));
 
         let mut top = entries(&listener_branches);
@@ -1041,26 +1010,15 @@ mod tests {
 
     #[test]
     fn reused_named_outbound_chain_counts_branches_once() {
-        // A named outbound chain is a top-level `filter_chain`, already counted
-        // (and capped at 256) config-wide by `validate_branch_chains`. Binding it
-        // from several callouts must not re-count its branches per binding — that
-        // would falsely reject the documented shared/reused named-outbound-chain
-        // pattern for a config the whole-config pass accepts. Only inline
-        // outbound chains, which never appear in `Config::filter_chains`, escape
-        // that pass and so must accumulate into the shared budget.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
         let utility = entries("- filter: headers\n");
-        // A named `outbound` chain defining 130 branch chains: under the 256
-        // ceiling on its own, but 260 if wrongly counted once per binding.
         let outbound_yaml = filters_with_branches(130, "nb");
         let outbound = entries(&outbound_yaml);
         let chains: HashMap<&str, &[FilterEntry]> =
             HashMap::from([("utility", utility.as_slice()), ("outbound", outbound.as_slice())]);
 
-        // Two callouts, each binding the SAME named chain by reference (a bare
-        // string resolves to ChainRef::Named).
         let mut top = entries(
             "
 - filter: outbound_callout
@@ -1075,28 +1033,15 @@ mod tests {
 
     #[test]
     fn outbound_named_and_inline_branches_share_config_wide_budget() {
-        // The total-branch ceiling is configuration-wide, not per listener. A
-        // named outbound chain the listener never references still materializes
-        // when bound, and the whole-config `validate_branch_chains` pass counts it
-        // toward the ceiling. Seeding the build budget with only the listener's
-        // own branches would let a bound named chain (200) and an inline outbound
-        // chain (100) each stay under the ceiling while 300 branch definitions
-        // materialize in one build — twice the ceiling's intent. The seed must
-        // span the whole configuration so the two pools cannot be additive.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
         let utility = entries("- filter: headers\n");
-        // A named chain with 200 branch chains that the listener does not list in
-        // its `filter_chains`, so a listener-scoped seed would not count it.
         let named_yaml = filters_with_branches(200, "nb");
         let named = entries(&named_yaml);
         let chains: HashMap<&str, &[FilterEntry]> =
             HashMap::from([("utility", utility.as_slice()), ("named_ob", named.as_slice())]);
 
-        // One callout binds the named 200-branch chain by reference; a second
-        // binds an inline chain of 100 branches. 300 branch definitions
-        // materialize in one build.
         let top_yaml = format!(
             "- filter: outbound_callout\n  outbound_chain: named_ob\n{}",
             outbound_callout_with_branches(100)
@@ -1118,18 +1063,9 @@ mod tests {
 
     #[test]
     fn outbound_binding_branch_depth_starts_fresh() {
-        // A bound outbound pipeline is an independent pipeline: its branch
-        // nesting restarts at zero rather than continuing the parent's. An
-        // outbound chain whose internal branches nest to the maximum branch
-        // depth must therefore build. If binding leaked the parent's depth into
-        // the bound pipeline (one counter conflating branch and outbound
-        // nesting), the same chain would spuriously trip the branch-depth
-        // ceiling one level early.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
-        // outbound(0) -> d1(1) -> ... -> d{n}(n) -> leaf(n+1); with the fix the
-        // deepest resolve lands at exactly MAX_BRANCH_DEPTH and is accepted.
         let intermediate = MAX_BRANCH_DEPTH - 1;
         let leaf = vec![make_entry("request_id")];
         let owned: Vec<Vec<FilterEntry>> = (1..=intermediate)
@@ -1162,12 +1098,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_ordering_violation_rejected() {
-        // A bound outbound chain is a real pipeline and must pass the same
-        // structural ordering validation as a top-level chain. A load_balancer
-        // with no preceding cluster selector would 502 at runtime, so it must
-        // fail the build instead of binding silently. The endpoint uses a
-        // non-sensitive TEST-NET address so the SSRF gate does not fire first
-        // and mask the ordering error under test.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1198,9 +1128,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_ordering_violation_downgraded_with_skip_flag() {
-        // The same chain must build when the operator skips that ordering check,
-        // proving the gate is threaded from the declared posture rather than an
-        // unconditional rejection.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1244,10 +1171,6 @@ mod tests {
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
-        // A branch that re-enters more than the ceiling permits must fail the
-        // build; the runtime branch builder only requires `max_iterations` to be
-        // present for backward rejoins and never enforces the ceiling, so
-        // without a bind-time check this loop would activate unbounded.
         let mut top = entries(
             "
 - filter: outbound_callout
@@ -1315,10 +1238,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_with_branch_nested_tcp_filter_rejected() {
-        // The TCP-level filter is buried inside a branch sub-chain of the
-        // outbound chain, not at its top level. The runtime executor skips it
-        // just the same, so the build-time rejection must scan branch sub-chains
-        // too — not only the top-level filter list.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1366,8 +1285,6 @@ mod tests {
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
-        // A fully valid IRR (so nothing else fails the build first): one step
-        // with a router + load_balancer over a non-sensitive TEST-NET endpoint.
         let mut top = entries(
             "
 - filter: outbound_callout
@@ -1409,10 +1326,6 @@ mod tests {
     #[test]
     #[expect(clippy::too_many_lines, reason = "inline valid-IRR YAML fixture nested in a branch")]
     fn outbound_chain_with_branch_nested_terminal_filter_rejected() {
-        // The terminal filter is buried inside a branch sub-chain of the outbound
-        // chain, not at its top level. It activates and drops its terminal
-        // response at runtime just the same, so the build-time rejection must
-        // scan branch sub-chains too — not only the top-level entry list.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1462,12 +1375,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_with_custom_terminal_filter_rejected() {
-        // A *custom* filter — not the builtin `iterative_request_router` — that
-        // declares it produces terminal responses. Name-based detection only
-        // knows the hard-coded builtin terminal names, so it would let this
-        // through; the executor would then drop its terminal action and error
-        // that no upstream resolved. Capability-based detection must reject it at
-        // build time.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
         register_custom_terminal(&mut registry);
@@ -1509,8 +1416,6 @@ mod tests {
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
-        // 101 filters — one past the per-chain cap. A bound chain must face the
-        // same limit, or a runaway outbound chain builds unbounded.
         let filters_yaml = "      - filter: request_id\n".repeat(101);
         let top_yaml =
             format!("- filter: outbound_callout\n  outbound_chain:\n    name: outbound\n    filters:\n{filters_yaml}");
@@ -1532,8 +1437,6 @@ mod tests {
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
-        // An empty `unless` predicate matches every request, so it silently
-        // disables the filter — almost always a config accident.
         let mut top = entries(
             "
 - filter: outbound_callout
@@ -1559,9 +1462,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_branch_nested_empty_condition_rejected() {
-        // The empty predicate is buried inside a branch sub-chain of the outbound
-        // chain, not at its top level. Condition validation must recurse into
-        // branch sub-chains too, matching the top-level walk.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1628,10 +1528,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_surfaces_branch_nested_referenced_files_for_reload() {
-        // The file-referencing filter is buried inside a branch sub-chain of the
-        // outbound chain. Hot-reload file discovery must still surface its
-        // document, or editing a document referenced only from a branch would not
-        // trigger a reload.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
         register_outbound_probe(&mut registry);
@@ -1666,11 +1562,6 @@ mod tests {
 
     #[test]
     fn outbound_pipeline_receives_and_retains_runtime_resources() {
-        // A chain-binding filter owns its outbound pipeline; the framework reaches
-        // it only through `visit_nested_pipelines`. Bind through the public API,
-        // then drive the same propagation the parent pipeline's `set_*` methods
-        // perform, and confirm the resource reaches — and persists on — the bound
-        // pipeline.
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
 
@@ -1700,8 +1591,6 @@ mod tests {
             "a runtime resource set on the parent must propagate into the bound outbound pipeline"
         );
 
-        // Re-observe through a fresh visit to prove the value persisted on the
-        // bound pipeline rather than being a transient during-visit view.
         let mut observed = false;
         callout.visit_nested_pipelines(&mut |pipeline| observed = pipeline.records_filter_duration_metrics());
         assert!(
@@ -1740,10 +1629,6 @@ mod tests {
 
     #[test]
     fn outbound_chain_applies_insecure_options_to_branch_nested_filters() {
-        // The insecure-option-aware filter is buried inside a branch sub-chain of
-        // the outbound chain. Insecure options applied to the parent must still
-        // reach it, or a branch-contained filter would silently keep its secure
-        // defaults while the operator believed the override applied everywhere.
         let applied = Arc::new(AtomicBool::new(false));
         let mut registry = FilterRegistry::with_builtins();
         register_outbound_callout(&mut registry);
@@ -1785,7 +1670,6 @@ mod tests {
         register_probe(&mut registry, Arc::clone(&sink));
         let chains = HashMap::new();
 
-        // v1: a 2-filter outbound chain.
         let mut v1 = entries(
             "
 - filter: test_callout
@@ -1803,7 +1687,6 @@ mod tests {
             "v1 binds a 2-filter outbound chain"
         );
 
-        // v2 (a reload): a 3-filter outbound chain must re-bind from the new config.
         let mut v2 = entries(
             "
 - filter: test_callout

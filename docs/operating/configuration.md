@@ -309,11 +309,10 @@ listeners:
     filter_chains: [main]
 ```
 
-The limit is enforced via a per-listener semaphore.
-Permits are held for the request lifetime (HTTP) or
-connection lifetime (TCP) and released automatically on
-completion, error, or timeout. Each listener has an
-independent limit.
+A slot is held for the request lifetime (HTTP) or
+connection lifetime (TCP) and freed on completion,
+error, or timeout. Each listener has an independent
+limit.
 
 See [max-connections.yaml] for an example.
 
@@ -619,9 +618,9 @@ use it as a primary data store.
 ### Pluggable Backends
 
 The `KvBackend` trait allows alternative implementations
-(e.g. Redis). The default `InMemoryKvBackend` uses
-DashMap. See the `praxis_core::kv` module docs for the
-trait definition.
+(e.g. Redis). The default `InMemoryKvBackend` keeps
+entries in memory. See the `praxis_core::kv`
+module docs for the trait definition.
 
 ## Graceful Shutdown
 

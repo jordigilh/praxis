@@ -2205,7 +2205,6 @@ mod tests {
     fn structured_metadata_namespace_count_is_bounded() {
         let req = crate::test_utils::make_request(Method::GET, "/");
         let mut ctx = crate::test_utils::make_filter_context(&req);
-        // Fill to the namespace cap, then attempt one more distinct namespace.
         for i in 0..MAX_STRUCTURED_METADATA_NAMESPACES {
             ctx.set_structured_metadata(&format!("ns{i}"), "k", serde_json::json!(i));
         }
@@ -2214,7 +2213,6 @@ mod tests {
             ctx.get_structured_metadata("overflow", "k").is_none(),
             "a namespace beyond the cap must be dropped"
         );
-        // Existing namespaces remain writable past the cap.
         ctx.set_structured_metadata("ns0", "k2", serde_json::json!(2));
         assert_eq!(
             ctx.get_structured_metadata("ns0", "k2"),

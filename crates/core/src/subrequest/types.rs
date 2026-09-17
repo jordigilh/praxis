@@ -222,9 +222,7 @@ pub struct StreamingSubResponse {
 /// the next body chunk. Returns `Ok(None)` at clean EOF.
 ///
 /// Owns the live Pingora HTTP session, admission permit, connector
-/// (for session release), and all streaming deadlines. No background
-/// tasks or channels — downstream backpressure naturally paces
-/// upstream reads.
+/// (for session release), and all streaming deadlines.
 pub struct SubResponseBody {
     /// Live Pingora HTTP session.
     pub(super) session: Option<pingora_core::protocols::http::client::HttpSession<()>>,
