@@ -126,7 +126,7 @@ impl fmt::Debug for TokenBucket {
     clippy::cast_precision_loss,
     reason = "whole_secs max ~1.8e10 (u64::MAX nanos); well within f64's 2^53 mantissa. remainder < 1e9 is exact"
 )]
-fn nanos_to_secs(nanos: u64) -> f64 {
+pub(crate) fn nanos_to_secs(nanos: u64) -> f64 {
     let whole_secs = nanos / 1_000_000_000;
     let remainder = nanos % 1_000_000_000;
     whole_secs as f64 + remainder as f64 / 1_000_000_000.0

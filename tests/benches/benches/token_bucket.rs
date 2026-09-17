@@ -55,6 +55,23 @@ const INTERVAL_NANOS: u64 = 100_000;
 /// Number of tokens in [`BURST`] as an integer.
 const BURST_TOKENS: u64 = 1_000_000_000;
 
+const _: () = assert!(
+    BURST_TOKENS <= u32::MAX as u64,
+    "BURST_TOKENS must fit in governor's u32 burst API"
+);
+
+/// Keep the rejection clock's wrap no longer than one token refill interval.
+const REJECTION_CLOCK_MODULUS_NANOS: u64 = {
+    let rate_interval_nanos = (1_000_000_000.0 / RATE) as u64;
+    if rate_interval_nanos == 0 {
+        1
+    } else if rate_interval_nanos < INTERVAL_NANOS {
+        rate_interval_nanos
+    } else {
+        INTERVAL_NANOS
+    }
+};
+
 // ----------------------------------------------------------------------------
 // Benchmark Candidates
 // ----------------------------------------------------------------------------
@@ -158,7 +175,7 @@ impl Candidate for LockedSplitAtomicsCandidate {
         let last_refill = self.last_refill.load(Ordering::Relaxed);
         let elapsed_nanos = now_nanos.saturating_sub(last_refill);
         let tokens = if elapsed_nanos > 0 {
-            (tokens + nanos_to_secs(elapsed_nanos) * self.rate).min(self.burst)
+            (tokens + production_token_bucket::nanos_to_secs(elapsed_nanos) * self.rate).min(self.burst)
         } else {
             tokens
         };
@@ -241,7 +258,7 @@ impl Candidate for Packed128CasCandidate {
             let (tokens, last_refill) = unpack_state(old_state);
             let elapsed_nanos = now_nanos.saturating_sub(last_refill);
             let tokens = if elapsed_nanos > 0 {
-                (tokens + nanos_to_secs(elapsed_nanos) * self.rate).min(self.burst)
+                (tokens + production_token_bucket::nanos_to_secs(elapsed_nanos) * self.rate).min(self.burst)
             } else {
                 tokens
             };
@@ -373,7 +390,9 @@ impl InspectableCandidate for LockedSplitAtomicsCandidate {
         self.lock();
         let tokens = f64::from_bits(self.tokens.load(Ordering::Relaxed));
         let last_refill = self.last_refill.load(Ordering::Relaxed);
-        let current = (tokens + nanos_to_secs(now_nanos.saturating_sub(last_refill)) * self.rate).min(self.burst);
+        let current = (tokens
+            + production_token_bucket::nanos_to_secs(now_nanos.saturating_sub(last_refill)) * self.rate)
+            .min(self.burst);
         self.unlock();
         current
     }
@@ -383,7 +402,8 @@ impl InspectableCandidate for Packed128CasCandidate {
     fn current(&self, now_nanos: u64) -> f64 {
         let state = self.state.load(Ordering::Acquire);
         let (tokens, last_refill) = unpack_state(state);
-        (tokens + nanos_to_secs(now_nanos.saturating_sub(last_refill)) * self.rate).min(self.burst)
+        (tokens + production_token_bucket::nanos_to_secs(now_nanos.saturating_sub(last_refill)) * self.rate)
+            .min(self.burst)
     }
 }
 
@@ -541,7 +561,11 @@ fn bench_contention<C: Candidate>(
                             let mut acquired = 0_u64;
                             for _ in 0..count {
                                 now_nanos = now_nanos.saturating_add(1);
-                                let now = if rejected { now_nanos % 10 } else { now_nanos };
+                                let now = if rejected {
+                                    now_nanos % REJECTION_CLOCK_MODULUS_NANOS
+                                } else {
+                                    now_nanos
+                                };
                                 acquired += u64::from(acquire_candidate(candidate, black_box(now)).is_some());
                             }
                             total_acquired.fetch_add(acquired, Ordering::Relaxed);
@@ -563,23 +587,15 @@ fn bench_contention<C: Candidate>(
                 let actual_acquired = total_acquired.load(Ordering::Acquire);
                 // Rejection cases start with one token to exercise the transition.
                 let expected_acquired = if rejected { 1 } else { iterations };
-                assert_eq!(actual_acquired, expected_acquired);
+                assert_eq!(
+                    actual_acquired, expected_acquired,
+                    "contention acquisition count mismatch; rejected mode requires the synthetic clock to wrap before one token can refill"
+                );
                 black_box(actual_acquired);
                 elapsed
             })
         });
     });
-}
-
-/// Convert nanoseconds to seconds without overflowing the floating mantissa.
-#[expect(
-    clippy::cast_precision_loss,
-    reason = "benchmark timestamps are well below f64's exact integer range"
-)]
-fn nanos_to_secs(nanos: u64) -> f64 {
-    let whole_secs = nanos / 1_000_000_000;
-    let remainder = nanos % 1_000_000_000;
-    whole_secs as f64 + remainder as f64 / 1_000_000_000.0
 }
 
 /// Pack the logical bucket state into one compare-and-exchange word.
