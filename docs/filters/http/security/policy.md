@@ -3,7 +3,7 @@
 
 # `policy`
 
-Embeds the Praxis Policy Engine in-process to enforce multi-source JWT identity, APL route policy, RFC 8693 token exchange, PII scanning, audit emission, and (under `body_access: read_write`) request / response body rewriting.
+Embeds the Praxis Policy Engine in-process to enforce multi-source identity, APL route policy, RFC 8693 token exchange, field redaction, session taint, audit emission, and (under `body_access: read_write`) request / response body rewriting. Content scanning is a host plugin the engine dispatches, not a bundled one.
 
 Requires Cargo feature: `policy-engine`.
 
@@ -15,7 +15,9 @@ A single request can carry multiple identity sources — user JWT in `Authorizat
 
 On the body phase, the filter consumes protocol classifier filter metadata (from the `praxis-ai` package) to dispatch the matching CMF hook chain. APL routes (declared in the policy document) gate the tool/prompt/resource call by role, attribute, or Cedar PDP decision. `delegate(...)` steps mint audience-scoped tokens (RFC 8693) that the allow path attaches as upstream headers.
 
-`body_access: read_write` enables the JSON-RPC re-serialization round-trip so APL field mutators (`redact()`, `assign()`) rewrite the upstream request body and the downstream response.
+Policies with `llm:` routes authorize the top-level request `model` through `cmf.llm_input`, without classifier metadata. Missing, unlisted, and ambiguous models fail closed by default.
+
+`body_access: read_write` enables the JSON-RPC re-serialization round-trip so APL field mutators (`redact()`, `assign()`) rewrite the upstream request body and the downstream response. It also enables `cmf.llm_output` for non-streaming inference responses. APL field mutators do not rewrite inference bodies.
 
 Outbound policy calls share the proxy's sub-request limits and circuit breaker, use HTTP/1.1, and keep a separate 1 MiB response ceiling. TLS uses the platform trust store; cluster private CAs and client certificates do not apply. Private destinations require `allow_private_idp`.
 
@@ -32,9 +34,15 @@ The referenced YAML is the policy document — plugins, routes, and identity-sou
 | `body_access` | `read_only` \| `read_write` | no | Body-access tier. `ReadOnly` (default) lets APL inspect request and response bodies for routing / policy decisions but discards any mutations. `ReadWrite` enables the CMF → JSON-RPC re-serialization round-trip so APL field mutators (e.g. `args.ssn: redact(!perm.view_ssn)`) rewrite the upstream body and response. Pay the round-trip cost only when needed. |
 | `config_path` | string | yes | Filesystem path to the policy document. |
 | `init_timeout_secs` | integer | no | Maximum time, in seconds, to wait for `PolicyEngine::initialize` at filter construction. Identity plugins fetch JWKS over HTTPS during init; a reachable-but-unresponsive identity provider would otherwise hang startup or hot-reload indefinitely. On expiry, filter construction returns an error and the server fails fast. 30s is generous for legitimate cold-cache JWKS fetches over the public internet, while short enough that misbehavior is noticed during the deploy. |
-| `max_buffer_bytes` | integer | no | Maximum request/response body bytes buffered in `ReadWrite` mode. `ReadWrite` uses `StreamBuffer` to accumulate the whole body before APL field mutators run; without a cap an oversized payload could exhaust memory. Ignored in `ReadOnly` mode, which streams. The pipeline rejects an unbounded buffer at config load, so this always carries a concrete ceiling. |
+| `max_buffer_bytes` | integer | no | Maximum request or response body size in `ReadWrite` mode. Also used as the default inference request limit. |
 | `allow_private_idp` | bool | no | Permit private or loopback policy endpoints. By default, private DNS answers are skipped and calls with no public answer are rejected. Proxy upstreams use `insecure_options.allow_private_endpoints` instead. |
-| `require_protocol_metadata` | bool | no | Fail-closed policy gate for misconfigured chains. When `true` (default), `on_request_body` rejects any request that reaches it without `mcp.method` filter-metadata. The metadata is set by the protocol classifier filter (available in the `praxis-ai` package), so its absence means either (a) the protocol classifier filter is missing from the chain, or (b) it is ordered AFTER `policy` instead of before. Either is a misconfiguration that would silently bypass CMF/APL policy. Set to `false` only when intentionally fronting non-classified traffic through the `policy` filter for identity-only enforcement (legacy behavior). Only consulted when the loaded policy declares entity routes (tool/prompt/resource). A pure-L7 (`global`-only) or identity-only policy never reaches this gate — `on_request_body` returns `BodyDone` before it, so the flag has no effect there. JSON-RPC methods that legitimately carry no entity (e.g. `tools/list`, `initialize`, `prompts/list`) still pass — `require_protocol_metadata` only rejects when the metadata is missing entirely. |
+| `require_protocol_metadata` | bool | no | Fail-closed policy gate for misconfigured chains. When `true` (default), `on_request_body` rejects any request that reaches it without `mcp.method` filter-metadata. The metadata is set by the protocol classifier filter (available in the `praxis-ai` package), so its absence means either (a) the protocol classifier filter is missing from the chain, or (b) it is ordered AFTER `policy` instead of before. Either is a misconfiguration that would silently bypass CMF/APL policy. Set to `false` only when intentionally fronting non-classified traffic through the `policy` filter for identity-only enforcement (legacy behavior). Only applies to policies with MCP entity routes. Inference routes use their own gates instead. JSON-RPC methods that legitimately carry no entity (e.g. `tools/list`, `initialize`, `prompts/list`) still pass — `require_protocol_metadata` only rejects when the metadata is missing entirely. |
+| `llm` | LlmOptions | no | Inference authorization options. |
+| `llm.max_request_bytes` | integer | no | Maximum buffered inference request size, in bytes. Requests over this limit receive HTTP 413. |
+| `llm.promote_params` | string[] | no | Top-level scalar fields promoted to `custom.llm.<name>`. A configured list replaces the defaults. |
+| `llm.provider` | string | no | Operator-supplied provider recorded on `llm.provider`. |
+| `llm.require_model` | bool | no | Deny a request whose body carries no usable top-level `model`. Enabled by default. When disabled, the request falls through to other policy paths. |
+| `llm.require_route` | bool | no | Deny a model no `llm:` route selects. Enabled by default. Disable only to admit unlisted models. |
 
 ## Example
 
@@ -44,5 +52,9 @@ config_path: /etc/praxis/policy.yaml
 body_access: read_write       # optional; default read_only
 require_protocol_metadata: true    # optional; default true
 init_timeout_secs: 30         # optional; default 30
-max_buffer_bytes: 10485760    # optional; default 10 MiB (read_write only)
+max_buffer_bytes: 10485760
+llm:
+  require_model: true
+  require_route: true
+  provider: openai
 ```

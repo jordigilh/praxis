@@ -820,6 +820,7 @@ fn build_filter(config_path: String) -> PolicyFilter {
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
     };
     PolicyFilter::new(cfg).expect("filter should construct")
 }
@@ -1052,6 +1053,7 @@ fn rejects_zero_max_buffer_bytes() {
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: 0,
+        llm: super::config::LlmOptions::default(),
     };
     let err = match PolicyFilter::new(cfg) {
         Ok(_) => panic!("zero max_buffer_bytes must be rejected"),
@@ -1069,6 +1071,7 @@ fn rejects_oversized_max_buffer_bytes() {
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: praxis_core::config::ABSOLUTE_MAX_BODY_BYTES + 1,
+        llm: super::config::LlmOptions::default(),
     };
     let err = match PolicyFilter::new(cfg) {
         Ok(_) => panic!("oversized max_buffer_bytes must be rejected"),
@@ -1826,6 +1829,7 @@ async fn missing_protocol_metadata_passes_when_not_required() {
         require_protocol_metadata: false,
         init_timeout_secs: 30,
         max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
     };
     let filter = PolicyFilter::new(cfg).expect("filter should construct");
 
@@ -2668,6 +2672,7 @@ async fn response_phase_without_request_identity_fails_closed() {
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
     };
     let filter = PolicyFilter::new(cfg).expect("filter should construct");
 
@@ -2932,6 +2937,7 @@ fn try_build_filter_allowing_private(
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
     })
 }
 
@@ -3531,6 +3537,7 @@ routes:
         require_protocol_metadata: true,
         init_timeout_secs: 30,
         max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
     };
     let err = PolicyFilter::new(cfg)
         .err()
@@ -3582,5 +3589,1315 @@ async fn the_response_half_is_gated_on_the_policy_declaring_one() {
         Some("http.response"),
         "a declared response contract opens the half; the engine applies a \
          contract at every return site of the hook, registered handler or not",
+    );
+}
+
+// -----------------------------------------------------------------------------
+// Inference (LLM) authorization
+// -----------------------------------------------------------------------------
+
+/// Write a policy with named and catch-all inference routes.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_route_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: allowed-model
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "deny('model is not permitted', 'model_not_allowed')"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Write a policy with inference and MCP tool routes.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_and_tool_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - tool: echo
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+      post_invocation:
+        - "completion.tokens.total > 100: deny('completion too long', 'completion_too_long')"
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "deny('model is not permitted', 'model_not_allowed')"
+      post_invocation:
+        - "completion.tokens.total > 100: deny('completion too long', 'completion_too_long')"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+
+/// Write a policy with only an inference response hook.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_post_only_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: "*"
+    authorization:
+      post_invocation:
+        - "completion.tokens.total > 100: deny('completion too long', 'completion_too_long')"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Write an inference policy with request and response field mutators.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_mutator_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+    args:
+      messages: "redact(authenticated)"
+    result:
+      content: "redact(authenticated)"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Write a policy that denies a configured inference provider.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_provider_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "llm.provider == 'contoso': deny('provider reached the bag', 'provider_seen')"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Write a policy with one named inference route and no catch-all.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_and_tool_config_without_catch_all() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: allowed-model
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Write a policy that denies large inference responses.
+#[expect(
+    clippy::too_many_lines,
+    reason = "test fixture — the YAML literal is the bulk; splitting helpers would obscure the shape under test"
+)]
+fn write_llm_post_config() -> (TempDir, String) {
+    let dir = TempDir::new().expect("create tempdir");
+    let cfg_path = dir.path().join("cpex.yaml");
+    let yaml = format!(
+        r#"plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks:
+      - identity.resolve
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "{TEST_ISSUER}"
+          audiences: ["{TEST_AUDIENCE}"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "{TEST_SECRET}"
+          leeway_seconds: 60
+      claim_mapper: standard
+global:
+  authentication:
+    - jwt-user
+routes:
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+      post_invocation:
+        - "completion.tokens.total > 100: deny('completion too long', 'completion_too_long')"
+"#
+    );
+    std::fs::write(&cfg_path, yaml).expect("write cpex.yaml");
+    (dir, cfg_path.to_str().expect("utf8 path").to_owned())
+}
+
+/// Build a policy filter with custom inference options.
+fn build_filter_with_llm(config_path: String, llm: super::config::LlmOptions) -> PolicyFilter {
+    PolicyFilter::new(PolicyFilterConfig {
+        config_path,
+        allow_private_idp: false,
+        body_access: super::config::BodyAccessMode::ReadOnly,
+        require_protocol_metadata: true,
+        init_timeout_secs: 30,
+        max_buffer_bytes: 10_485_760,
+        llm,
+    })
+    .expect("filter should construct")
+}
+
+/// Whether a rejection contains the requested header.
+fn has_header(rejection: &crate::Rejection, name: &str, value: &str) -> bool {
+    rejection
+        .headers
+        .iter()
+        .any(|(header, held)| header.eq_ignore_ascii_case(name) && held == value)
+}
+
+/// Run an authenticated inference request through the body phase.
+async fn dispatch_inference_as(filter: &PolicyFilter, subject: &str, body: &str) -> FilterAction {
+    let token = mint_jwt(&standard_claims(subject));
+    let mut req = make_request(Method::POST, "/v1/chat/completions");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    filter
+        .on_request_body(&mut ctx, &mut Some(bytes::Bytes::from(body.to_owned())), true)
+        .await
+        .expect("filter ran")
+}
+
+#[test]
+fn derives_the_inference_shape_for_an_llm_only_policy() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+    assert_eq!(
+        filter.derived_shape(),
+        (false, true),
+        "`llm:` routes are entity routes: authorization belongs at the body phase",
+    );
+    assert_eq!(
+        filter.derived_llm_shape(),
+        (true, false),
+        "a pre-invocation-only inference policy declares no response half",
+    );
+}
+
+#[test]
+fn derives_the_inference_response_half_when_the_policy_declares_one() {
+    let (_dir, path) = write_llm_post_config();
+    assert_eq!(build_filter(path).derived_llm_shape(), (true, true));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn inference_request_is_authorized_without_classifier_metadata() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"allowed-model","messages":[]}"#).await;
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "the per-model route must admit an authenticated caller with no classifier in the chain; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_model_outside_the_policy_is_denied_with_a_provider_error() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"other-model","messages":[]}"#).await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("a model the policy excludes must be denied; got {action:?}");
+    };
+    assert_eq!(rejection.status, 403, "an inference client expects a real HTTP status");
+    assert!(
+        has_header(&rejection, "content-type", "application/json"),
+        "an SDK parses error.message out of the body, so the media type has to be named; got {:?}",
+        rejection.headers,
+    );
+    assert!(
+        rejection
+            .headers
+            .iter()
+            .any(|(name, value)| name == "X-Policy-Violation" && value == "model_not_allowed"),
+        "the violation code must be on the response for audit pipelines; got {:?}",
+        rejection.headers,
+    );
+    let body: serde_json::Value =
+        serde_json::from_slice(&rejection.body.expect("deny body")).expect("deny body is JSON");
+    assert_eq!(body["error"]["code"], "model_not_allowed");
+    assert_eq!(body["error"]["type"], "policy_violation");
+    assert_eq!(
+        body["error"]["message"], "model is not permitted",
+        "an OpenAI SDK surfaces error.message, so the policy's reason has to land there",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_body_with_no_usable_model_fails_closed() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    for body in [r#"{"messages":[]}"#, r#"{"model":42}"#, r#"{"model":""}"#, "not json"] {
+        let action = dispatch_inference_as(&filter, "alice", body).await;
+        let FilterAction::Reject(rejection) = action else {
+            panic!("body {body} must be denied; got {action:?}");
+        };
+        assert!(
+            rejection
+                .headers
+                .iter()
+                .any(|(name, value)| name == "X-Policy-Violation" && value == "llm.model_missing"),
+            "body {body} must deny with the missing-model violation; got {:?}",
+            rejection.headers,
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_model_no_route_selects_is_denied() {
+    let (_dir, path) = write_llm_and_tool_config_without_catch_all();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"unlisted-model","messages":[]}"#).await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("a model outside every route must be denied; got {action:?}");
+    };
+    assert!(
+        rejection
+            .headers
+            .iter()
+            .any(|(name, value)| name == "X-Policy-Violation" && value == "llm.no_route"),
+        "the deny must say no route covers the model; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn require_route_false_admits_a_model_no_route_selects() {
+    let (_dir, path) = write_llm_and_tool_config_without_catch_all();
+    let filter = build_filter_with_llm(
+        path,
+        super::config::LlmOptions {
+            require_route: false,
+            ..Default::default()
+        },
+    );
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"unlisted-model","messages":[]}"#).await;
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "with the gate off an unlisted model takes the identity-only path; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_catch_all_route_satisfies_the_route_requirement() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"other-model","messages":[]}"#).await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("the catch-all denies this model by policy; got {action:?}");
+    };
+    assert!(
+        rejection
+            .headers
+            .iter()
+            .any(|(name, value)| name == "X-Policy-Violation" && value == "model_not_allowed"),
+        "the catch-all's own rule must decide it, not the route gate; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_bodyless_request_is_not_asked_for_a_model() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    for method in [Method::GET, Method::HEAD, Method::OPTIONS] {
+        let mut req = make_request(method.clone(), "/v1/models");
+        req.headers.insert(
+            "Authorization",
+            HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+        );
+        let mut ctx = make_filter_context(&req);
+        let action = filter
+            .on_request_body(&mut ctx, &mut None, true)
+            .await
+            .expect("filter ran");
+        assert!(
+            matches!(action, FilterAction::BodyDone),
+            "{method} carries no body, so it must not be denied for carrying no model; got {action:?}",
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_bodyless_request_still_needs_a_token() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let req = make_request(Method::GET, "/v1/models");
+    let mut ctx = make_filter_context(&req);
+    let action = filter
+        .on_request_body(&mut ctx, &mut None, true)
+        .await
+        .expect("filter ran");
+    assert!(
+        matches!(&action, FilterAction::Reject(rejection) if rejection.status == 401),
+        "an unauthenticated discovery call is still an identity failure; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_configured_provider_reaches_the_attribute_bag() {
+    let (_dir, path) = write_llm_provider_config();
+    let filter = build_filter_with_llm(
+        path,
+        super::config::LlmOptions {
+            provider: Some("contoso".to_owned()),
+            ..Default::default()
+        },
+    );
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"any-model","messages":[]}"#).await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("the provider-keyed rule must fire; got {action:?}");
+    };
+    assert!(
+        has_header(&rejection, "x-policy-violation", "provider_seen"),
+        "`llm.provider` must be readable by a rule; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_unset_provider_leaves_the_attribute_absent() {
+    let (_dir, path) = write_llm_provider_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"model":"any-model","messages":[]}"#).await;
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "an absent provider must not match the comparison; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn require_model_false_admits_a_request_with_no_model() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter_with_llm(
+        path,
+        super::config::LlmOptions {
+            require_model: false,
+            ..Default::default()
+        },
+    );
+
+    let action = dispatch_inference_as(&filter, "alice", r#"{"messages":[]}"#).await;
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "with the gate off, a body carrying no model takes the identity-only path; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_body_carrying_both_entity_coordinates_is_denied() {
+    let (_dir, path) = write_llm_and_tool_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    let mut req = make_request(Method::POST, "/");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    ctx.set_metadata("mcp.method", "tools/call");
+    ctx.set_metadata("mcp.name", "echo");
+    let body = bytes::Bytes::from_static(
+        br#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo","arguments":{}},"model":"other-model"}"#,
+    );
+
+    let action = filter
+        .on_request_body(&mut ctx, &mut Some(body), true)
+        .await
+        .expect("filter ran");
+    let FilterAction::Reject(rejection) = action else {
+        panic!("an ambiguous body must be denied; got {action:?}");
+    };
+    assert!(
+        rejection
+            .headers
+            .iter()
+            .any(|(name, value)| name == "X-Policy-Violation" && value == "llm.ambiguous_entity"),
+        "the deny must name the ambiguity, not a route decision; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_plain_mcp_request_still_takes_the_mcp_path() {
+    let (_dir, path) = write_llm_and_tool_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    let mut req = make_request(Method::POST, "/");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    ctx.set_metadata("mcp.method", "tools/call");
+    ctx.set_metadata("mcp.name", "echo");
+    let body = bytes::Bytes::from_static(
+        br#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo","arguments":{}}}"#,
+    );
+
+    let action = filter
+        .on_request_body(&mut ctx, &mut Some(body), true)
+        .await
+        .expect("filter ran");
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "the tool route must decide a request with no top-level `model`; got {action:?}",
+    );
+}
+
+#[test]
+fn inference_routes_buffer_the_request_body_in_read_only() {
+    let (_dir, path) = write_llm_route_config();
+    assert!(
+        matches!(
+            build_filter(path).request_body_mode(),
+            BodyMode::StreamBuffer {
+                max_bytes: Some(10_485_760)
+            }
+        ),
+        "an inference policy must ask for the whole body, bounded by llm.max_request_bytes",
+    );
+
+    let (_dir, path) = write_tool_route_config();
+    assert!(
+        matches!(build_filter(path).request_body_mode(), BodyMode::Stream),
+        "an MCP policy keeps streaming: the classifier ahead of it already buffers",
+    );
+}
+
+#[test]
+fn the_inference_ceiling_defaults_to_the_json_rpc_one() {
+    let cfg = super::config::LlmOptions::default();
+    assert_eq!(
+        cfg.max_request_bytes, 10_485_760,
+        "a deployment that set neither knob must keep the ceiling it had",
+    );
+}
+
+#[test]
+fn the_lower_ceiling_binds_when_both_apply() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = PolicyFilter::new(PolicyFilterConfig {
+        config_path: path,
+        allow_private_idp: false,
+        body_access: super::config::BodyAccessMode::ReadWrite,
+        require_protocol_metadata: true,
+        init_timeout_secs: 30,
+        max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions {
+            max_request_bytes: 4096,
+            ..Default::default()
+        },
+    })
+    .expect("filter should construct");
+
+    assert!(
+        matches!(
+            filter.request_body_mode(),
+            BodyMode::StreamBuffer { max_bytes: Some(4096) }
+        ),
+        "the smaller of the two ceilings must win",
+    );
+}
+
+#[test]
+fn rejects_an_out_of_range_inference_ceiling() {
+    for (max_request_bytes, expected) in [
+        (0, "llm.max_request_bytes must be > 0"),
+        (praxis_core::config::ABSOLUTE_MAX_BODY_BYTES + 1, "exceeds the maximum"),
+    ] {
+        let (_dir, path) = write_llm_route_config();
+        let err = PolicyFilter::new(PolicyFilterConfig {
+            config_path: path,
+            allow_private_idp: false,
+            body_access: super::config::BodyAccessMode::ReadOnly,
+            require_protocol_metadata: true,
+            init_timeout_secs: 30,
+            max_buffer_bytes: 10_485_760,
+            llm: super::config::LlmOptions {
+                max_request_bytes,
+                ..Default::default()
+            },
+        })
+        .err()
+        .unwrap_or_else(|| panic!("{max_request_bytes} must be rejected"))
+        .to_string();
+        assert!(err.contains(expected), "got: {err}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_parsed_model_reaches_filter_metadata() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    let mut req = make_request(Method::POST, "/v1/chat/completions");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    let body = bytes::Bytes::from_static(br#"{"model":"allowed-model","stream":true,"messages":[]}"#);
+
+    drop(
+        filter
+            .on_request_body(&mut ctx, &mut Some(body), true)
+            .await
+            .expect("filter ran"),
+    );
+
+    assert_eq!(ctx.get_metadata("llm.model"), Some("allowed-model"));
+    assert_eq!(
+        ctx.get_metadata("llm.stream"),
+        Some("true"),
+        "the streaming flag is recorded so the response half can skip an SSE body",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn inference_request_without_a_token_is_rejected_by_identity() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let req = make_request(Method::POST, "/v1/chat/completions");
+    let mut ctx = make_filter_context(&req);
+    let body = bytes::Bytes::from_static(br#"{"model":"allowed-model","messages":[]}"#);
+
+    let action = filter
+        .on_request_body(&mut ctx, &mut Some(body), true)
+        .await
+        .expect("filter ran");
+    assert!(
+        matches!(&action, FilterAction::Reject(rejection) if rejection.status == 401),
+        "an unauthenticated inference call is an identity failure, not a policy deny; got {action:?}",
+    );
+}
+
+/// Build a read-write inference policy filter.
+fn build_read_write_filter(config_path: String) -> PolicyFilter {
+    PolicyFilter::new(PolicyFilterConfig {
+        config_path,
+        allow_private_idp: false,
+        body_access: super::config::BodyAccessMode::ReadWrite,
+        require_protocol_metadata: true,
+        init_timeout_secs: 30,
+        max_buffer_bytes: 10_485_760,
+        llm: super::config::LlmOptions::default(),
+    })
+    .expect("filter should construct")
+}
+
+/// Run an inference request admitted by the test policy.
+async fn admit_inference(filter: &PolicyFilter, ctx: &mut crate::HttpFilterContext<'_>) {
+    let mut request = Some(bytes::Bytes::from_static(INFERENCE_REQUEST));
+    drop(
+        filter
+            .on_request_body(ctx, &mut request, true)
+            .await
+            .expect("request phase ran"),
+    );
+}
+
+/// Return a chat request containing redactable text.
+const MUTATED_REQUEST: &[u8] = br#"{"model":"gpt-4o","messages":[{"role":"user","content":"secret"}]}"#;
+
+/// Return a minimal admitted chat request.
+const INFERENCE_REQUEST: &[u8] = br#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#;
+
+/// Return a completion within the token budget.
+const WITHIN_BUDGET_RESPONSE: &str = r#"{"model":"gpt-4o","usage":{"prompt_tokens":5,"completion_tokens":5,"total_tokens":10},"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"hi"}}]}"#;
+
+/// Return a completion over the token budget.
+const OVER_BUDGET_RESPONSE: &str = r#"{"model":"gpt-4o","usage":{"prompt_tokens":5000,"completion_tokens":4999,"total_tokens":9999},"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"a long answer"}}]}"#;
+
+/// Return a short completion over the token budget.
+const TINY_OVER_BUDGET_RESPONSE: &str = r#"{"usage":{"total_tokens":9999}}"#;
+
+/// Return a non-JSON response body.
+const NON_JSON_RESPONSE: &str = "upstream failure, not JSON";
+
+/// Return a JSON-RPC tool result.
+const MCP_RESPONSE: &str = r#"{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"ok, with enough room for the round-trip"}]}}"#;
+
+/// Run an inference request and response through the filter.
+async fn inference_round_trip(
+    filter: &PolicyFilter,
+    request_body: &'static str,
+    response_body: &'static str,
+    content_type: &'static str,
+) -> bytes::Bytes {
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    let mut request = Some(bytes::Bytes::from_static(request_body.as_bytes()));
+    let action = filter
+        .on_request_body(&mut ctx, &mut request, true)
+        .await
+        .expect("request phase ran");
+    assert!(
+        matches!(action, FilterAction::BodyDone),
+        "the request half must admit before the response half is meaningful; got {action:?}",
+    );
+
+    let mut response = crate::test_utils::make_response();
+    response
+        .headers
+        .insert("content-type", HeaderValue::from_static(content_type));
+    ctx.response_header = Some(&mut response);
+
+    let mut body = Some(bytes::Bytes::from_static(response_body.as_bytes()));
+    drop(
+        filter
+            .on_response_body(&mut ctx, &mut body, true)
+            .expect("response phase ran"),
+    );
+    body.expect("response body")
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_deny_too_large_for_the_committed_length_stays_valid_json() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        TINY_OVER_BUDGET_RESPONSE,
+        "application/json",
+    )
+    .await;
+
+    assert_eq!(
+        body.len(),
+        TINY_OVER_BUDGET_RESPONSE.len(),
+        "the body must still match the Content-Length already on the wire",
+    );
+    let parsed: serde_json::Value =
+        serde_json::from_slice(&body).unwrap_or_else(|e| panic!("a deny body must parse; got {body:?} ({e})"));
+    assert!(
+        parsed.is_object(),
+        "the degraded envelope must still be a JSON object; got {body:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_field_mutator_leaves_an_inference_request_untouched() {
+    let (_dir, path) = write_llm_mutator_config();
+    let filter = build_read_write_filter(path);
+
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    let mut request = Some(bytes::Bytes::from_static(MUTATED_REQUEST));
+    drop(
+        filter
+            .on_request_body(&mut ctx, &mut request, true)
+            .await
+            .expect("request phase ran"),
+    );
+    assert_eq!(
+        request.expect("request body"),
+        bytes::Bytes::from_static(MUTATED_REQUEST),
+        "the upstream must receive the original body, not a partial redaction",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_field_mutator_leaves_an_inference_response_untouched() {
+    let (_dir, path) = write_llm_mutator_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"secret"}]}"#,
+        WITHIN_BUDGET_RESPONSE,
+        "application/json",
+    )
+    .await;
+
+    assert_eq!(
+        body,
+        bytes::Bytes::from_static(WITHIN_BUDGET_RESPONSE.as_bytes()),
+        "the client must receive the upstream body, not a partial redaction",
+    );
+}
+
+
+#[test]
+fn a_post_only_inference_policy_is_active() {
+    let (_dir, path) = write_llm_post_only_config();
+    let filter = build_read_write_filter(path);
+    assert_eq!(
+        filter.derived_shape(),
+        (false, true),
+        "a post-only `llm:` policy declares entity routes, so authorization belongs at the body phase",
+    );
+    assert_eq!(filter.derived_llm_shape(), (true, true));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_post_only_inference_policy_denies_an_over_budget_completion() {
+    let (_dir, path) = write_llm_post_only_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        OVER_BUDGET_RESPONSE,
+        "application/json",
+    )
+    .await;
+
+    let parsed: serde_json::Value = serde_json::from_slice(&body).expect("deny body is JSON");
+    assert_eq!(
+        parsed["error"]["code"], "completion_too_long",
+        "a post-only policy must reach its response rule; got {body:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_unclassified_json_rpc_body_with_a_model_is_denied() {
+    let (_dir, path) = write_llm_and_tool_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(
+        &filter,
+        "alice",
+        r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo"},"model":"allowed-model"}"#,
+    )
+    .await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("an unclassified body carrying both coordinates must be denied; got {action:?}");
+    };
+    assert!(
+        has_header(&rejection, "x-policy-violation", "llm.ambiguous_entity"),
+        "the deny must name the ambiguity rather than authorizing the model; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_unclassified_json_rpc_body_reports_the_classifier() {
+    let (_dir, path) = write_llm_and_tool_config();
+    let filter = build_filter(path);
+
+    let action = dispatch_inference_as(
+        &filter,
+        "alice",
+        r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo"}}"#,
+    )
+    .await;
+    assert!(
+        matches!(&action, FilterAction::Reject(rejection) if rejection.status == 500),
+        "a mixed policy must still fail closed on a missing classifier; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_get_carrying_a_body_is_still_evaluated() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    let mut req = make_request(Method::GET, "/v1/chat/completions");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    let mut body = Some(bytes::Bytes::from_static(br#"{"model":"other-model","messages":[]}"#));
+
+    let action = filter
+        .on_request_body(&mut ctx, &mut body, true)
+        .await
+        .expect("filter ran");
+    let FilterAction::Reject(rejection) = action else {
+        panic!("a GET carrying a model must be evaluated, not waved through; got {action:?}");
+    };
+    assert!(
+        has_header(&rejection, "x-policy-violation", "model_not_allowed"),
+        "the catch-all must decide it; got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_type_sharing_the_sse_prefix_is_not_treated_as_sse() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        OVER_BUDGET_RESPONSE,
+        "text/event-streamx",
+    )
+    .await;
+
+    let parsed: serde_json::Value = serde_json::from_slice(&body).expect("deny body is JSON");
+    assert_eq!(
+        parsed["error"]["code"], "completion_too_long",
+        "only the real SSE type may skip the response half; got {body:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_sse_type_skips_the_response_half_with_parameters() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    for content_type in [
+        "text/event-stream",
+        "text/event-stream; charset=utf-8",
+        "TEXT/EVENT-STREAM",
+    ] {
+        let body = inference_round_trip(
+            &filter,
+            r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+            OVER_BUDGET_RESPONSE,
+            content_type,
+        )
+        .await;
+        assert_eq!(
+            body,
+            bytes::Bytes::from_static(OVER_BUDGET_RESPONSE.as_bytes()),
+            "content type {content_type} names SSE, so the response half must stand aside",
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_body_past_the_inference_ceiling_is_rejected() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter_with_llm(
+        path,
+        super::config::LlmOptions {
+            max_request_bytes: 64,
+            ..Default::default()
+        },
+    );
+
+    let padding = "x".repeat(256);
+    let body = format!(r#"{{"model":"allowed-model","messages":[],"pad":"{padding}"}}"#);
+    let action = dispatch_inference_as(&filter, "alice", &body).await;
+    let FilterAction::Reject(rejection) = action else {
+        panic!("a body past the ceiling must be rejected; got {action:?}");
+    };
+    assert_eq!(rejection.status, 413, "the client can act on this by sending less");
+    assert!(
+        has_header(&rejection, "x-policy-violation", "llm.body_too_large"),
+        "got {:?}",
+        rejection.headers,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_content_encoded_completion_fails_closed() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    admit_inference(&filter, &mut ctx).await;
+
+    let mut response = crate::test_utils::make_response();
+    response
+        .headers
+        .insert("content-type", HeaderValue::from_static("application/json"));
+    response
+        .headers
+        .insert("content-encoding", HeaderValue::from_static("gzip"));
+    ctx.response_header = Some(&mut response);
+
+    let mut body = Some(bytes::Bytes::from_static(WITHIN_BUDGET_RESPONSE.as_bytes()));
+    drop(
+        filter
+            .on_response_body(&mut ctx, &mut body, true)
+            .expect("response phase ran"),
+    );
+
+    let served = body.expect("response body");
+    let parsed: serde_json::Value = serde_json::from_slice(&served).expect("deny body is JSON");
+    assert_eq!(
+        parsed["error"]["code"], "llm.response_unreadable",
+        "an encoded completion must not skip the response-phase policy; got {served:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn accept_encoding_is_stripped_when_the_policy_evaluates_completions() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    admit_inference(&filter, &mut ctx).await;
+
+    assert!(
+        ctx.request_headers_to_remove.contains(&http::header::ACCEPT_ENCODING),
+        "the upstream must be asked for plain JSON; got {:?}",
+        ctx.request_headers_to_remove,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn accept_encoding_survives_a_request_only_inference_policy() {
+    let (_dir, path) = write_llm_route_config();
+    let filter = build_filter(path);
+
+    let token = mint_jwt(&standard_claims("alice"));
+    let mut req = make_request(Method::POST, "/v1/chat/completions");
+    req.headers.insert(
+        "Authorization",
+        HeaderValue::from_str(&format!("Bearer {token}")).expect("header value"),
+    );
+    let mut ctx = make_filter_context(&req);
+    let mut request = Some(bytes::Bytes::from_static(br#"{"model":"allowed-model","messages":[]}"#));
+    drop(
+        filter
+            .on_request_body(&mut ctx, &mut request, true)
+            .await
+            .expect("request phase ran"),
+    );
+
+    assert!(
+        !ctx.request_headers_to_remove.contains(&http::header::ACCEPT_ENCODING),
+        "a pre-invocation-only policy reads no completion, so compression should survive",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_streamed_response_releases_the_buffer_on_the_first_chunk() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    admit_inference(&filter, &mut ctx).await;
+
+    let mut response = crate::test_utils::make_response();
+    response
+        .headers
+        .insert("content-type", HeaderValue::from_static("text/event-stream"));
+    ctx.response_header = Some(&mut response);
+
+    let mut first = Some(bytes::Bytes::from_static(b"data: {\"delta\":\"hi\"}\n\n"));
+    let action = filter
+        .on_response_body(&mut ctx, &mut first, false)
+        .expect("response phase ran");
+    assert!(
+        matches!(action, FilterAction::Release),
+        "a mid-stream SSE chunk must release the buffer, not be held to EOS; got {action:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn an_over_budget_completion_is_replaced_with_a_provider_error() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        r#"{"model":"gpt-4o","usage":{"prompt_tokens":100,"completion_tokens":100,"total_tokens":200},
+            "choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"a long answer"}}]}"#,
+        "application/json",
+    )
+    .await;
+
+    let parsed: serde_json::Value = serde_json::from_slice(&body).expect("deny body is JSON");
+    assert_eq!(
+        parsed["error"]["code"], "completion_too_long",
+        "the post-phase deny must replace the upstream payload; got {body:?}",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_completion_within_budget_reaches_the_client_unchanged() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        WITHIN_BUDGET_RESPONSE,
+        "application/json",
+    )
+    .await;
+
+    assert_eq!(body, bytes::Bytes::from_static(WITHIN_BUDGET_RESPONSE.as_bytes()));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_streamed_response_skips_the_response_half() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let requested = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","stream":true,"messages":[{"role":"user","content":"hi"}]}"#,
+        OVER_BUDGET_RESPONSE,
+        "application/json",
+    )
+    .await;
+    let parsed: serde_json::Value = serde_json::from_slice(&requested).expect("deny body is JSON");
+    assert_eq!(
+        parsed["error"]["code"], "completion_too_long",
+        "asking to stream must not skip post-invocation policy when the upstream answered with \
+         one JSON completion; otherwise `stream: true` is a one-word bypass. Got {requested:?}",
+    );
+
+    let sse = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        OVER_BUDGET_RESPONSE,
+        "text/event-stream",
+    )
+    .await;
+    assert_eq!(
+        sse,
+        bytes::Bytes::from_static(OVER_BUDGET_RESPONSE.as_bytes()),
+        "nor must a response the upstream chose to stream, whatever the request asked for",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_non_json_response_body_passes_through() {
+    let (_dir, path) = write_llm_post_config();
+    let filter = build_read_write_filter(path);
+
+    let body = inference_round_trip(
+        &filter,
+        r#"{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}"#,
+        NON_JSON_RESPONSE,
+        "application/json",
+    )
+    .await;
+    assert_eq!(body, bytes::Bytes::from_static(NON_JSON_RESPONSE.as_bytes()));
+}
+
+#[test]
+fn the_mixed_fixture_opens_the_inference_response_half() {
+    let (_dir, path) = write_llm_and_tool_config();
+    assert_eq!(build_read_write_filter(path).derived_llm_shape(), (true, true));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_inference_response_half_does_not_claim_mcp_responses() {
+    let (_dir, path) = write_llm_and_tool_config();
+    let filter = build_read_write_filter(path);
+
+    let req = request_for_alice();
+    let mut ctx = make_filter_context(&req);
+    ctx.set_metadata("mcp.method", "tools/call");
+    ctx.set_metadata("mcp.name", "echo");
+    let request_body =
+        bytes::Bytes::from_static(br#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"echo"}}"#);
+    drop(
+        filter
+            .on_request_body(&mut ctx, &mut Some(request_body), true)
+            .await
+            .expect("request phase ran"),
+    );
+
+    let mut body = Some(bytes::Bytes::from_static(MCP_RESPONSE.as_bytes()));
+    drop(
+        filter
+            .on_response_body(&mut ctx, &mut body, true)
+            .expect("response phase ran"),
+    );
+
+    let served = body.expect("response body");
+    assert!(
+        served.starts_with(br#"{"jsonrpc""#),
+        "an MCP response must stay on the JSON-RPC post path — whatever that path does to the \
+         body, the shape stays JSON-RPC rather than the provider envelope an inference deny \
+         would produce; got {served:?}",
     );
 }

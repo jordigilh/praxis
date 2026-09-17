@@ -3,10 +3,12 @@
 
 //! The `policy` security filter — Praxis's in-process policy engine.
 //!
-//! Embeds the Praxis Policy Engine in-process to enforce multi-source JWT
+//! Embeds the Praxis Policy Engine in-process to enforce multi-source
 //! identity, APL (Authorization Policy Logic) route policy, RFC 8693 token
-//! exchange, PII scanning, audit emission, and (under
-//! `body_access: read_write`) request / response body rewriting.
+//! exchange, field redaction, session taint, audit emission, and (under
+//! `body_access: read_write`) request / response body rewriting. Content
+//! scanning is a host plugin: the engine dispatches it, and a policy that
+//! wants one names its `kind:`.
 //! Everything runs as linked Rust crates — no sidecar, no FFI.
 //!
 //! Compiled in and registered under the YAML name `policy` by default.
@@ -27,7 +29,7 @@
 //! # Where it sits in the chain
 //!
 //! The evaluation shape is derived from the loaded policy. A policy that
-//! declares entity routes (tool/prompt/resource) consumes metadata produced
+//! declares MCP entity routes (tool/prompt/resource) consumes metadata produced
 //! by a protocol classifier filter (available in the `praxis-ai` package),
 //! so that filter must run before it:
 //!
@@ -54,6 +56,21 @@
 //! default), a request that reaches `policy` without `mcp.method` is
 //! rejected — catching a chain that is missing the protocol classifier filter or has
 //! it ordered after `policy`.
+//!
+//! # Inference calls
+//!
+//! Policies with `llm:` routes authorize the top-level request `model` through
+//! `cmf.llm_input`; no protocol classifier is required. Missing and unlisted
+//! models fail closed by default, conflicting JSON-RPC and inference
+//! coordinates are denied, and `llm.max_request_bytes` bounds buffering.
+//! Bodyless requests remain subject to identity policy but skip inference
+//! routing. APIs that identify the model only in the URL are unsupported.
+//!
+//! See `examples/configs/security/policy-llm.yaml`.
+//!
+//! With `body_access: read_write`, `cmf.llm_output` evaluates non-streaming
+//! JSON responses. Encoded responses fail closed; SSE responses pass through.
+//! APL field mutators do not rewrite inference bodies in either direction.
 //!
 //! # The policy document
 //!
@@ -114,6 +131,9 @@
 //! | Policy suspend (human-in-the-loop approval pending) | HTTP 200 with a JSON-RPC error envelope carrying the violation's `proto_error_code` (`-32120`) instead of the generic deny code, plus the elicitation bundle (`elicitation_id` / `approver` / `expires_at` / `channel`) in `error.data` — a distinct code so the client can retry rather than treat it as a flat deny. |
 //! | Generic-HTTP (L7) policy deny | Plain HTTP response (default 403) with status / body / headers from the policy's `denyWith`, plus `X-Policy-Violation: <code>` — a non-MCP client gets a real HTTP status, not a JSON-RPC envelope. |
 //! | Missing `mcp.method` metadata | HTTP 500 (server-side misconfiguration; protocol classifier filter from `praxis-ai` missing or misordered). |
+//! | Inference request deny | Plain HTTP response with an OpenAI-compatible error envelope and `X-Policy-Violation`. |
+//! | Inference response deny | The response body is replaced; the committed status and headers cannot change. |
+//! | Oversized inference request | HTTP 413 with violation code `llm.body_too_large`. |
 //!
 //! Any violation carrying a `proto_error_code` overrides `-32001` on the
 //! wire, and its `details` map is merged into `error.data`; the pending
@@ -129,6 +149,7 @@
 //!
 //! - `examples/configs/security/policy.yaml` for a runnable filter config.
 //! - `examples/configs/security/policy-http.yaml` for a pure-L7 (generic-HTTP) authorization config.
+//! - `examples/configs/security/policy-llm.yaml` for inference (model) authorization.
 //! - The HR demo in the praxis-demos repository for an end-to-end walkthrough (identity, Cedar and CEL PDPs,
 //!   delegation, redaction, PII scanning, session taint).
 
@@ -139,6 +160,7 @@ mod error;
 mod filter;
 mod host_plugins;
 mod json_rpc;
+mod llm;
 mod transport;
 
 pub use filter::PolicyFilter;

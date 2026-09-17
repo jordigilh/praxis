@@ -1,0 +1,52 @@
+# Policy fixture for the inference authorization example.
+# Production deployments should replace the shared secret with RS256 and JWKS.
+
+plugins:
+  - name: jwt-user
+    kind: identity/jwt
+    hooks: [identity.resolve]
+    on_error: fail
+    config:
+      header: Authorization
+      trusted_issuers:
+        - issuer: "https://idp.example.com"
+          audiences: ["praxis-policy-example"]
+          algorithms: ["HS256"]
+          decoding_key:
+            kind: secret
+            secret: "REPLACE-WITH-A-PROPERLY-RANDOM-SHARED-SECRET-DO-NOT-COMMIT"
+          leeway_seconds: 60
+      claim_mapper: standard
+
+global:
+  authentication:
+    - jwt-user
+  authorization:
+    pre_invocation:
+      - "require(authenticated)"
+      # Response policy cannot evaluate SSE frames, so reject streaming first.
+      - "custom.llm.stream: deny('streaming is not permitted', 'stream_not_allowed')"
+
+routes:
+  # Open to any authenticated caller.
+  - llm: gpt-4o-mini
+    authorization:
+      pre_invocation:
+        - "require(authenticated)"
+
+  # Reserved for the research role.
+  - llm: [gpt-4o, o3]
+    authorization:
+      pre_invocation:
+        - "require(role.research)"
+
+  # Shape the denial for models not named above.
+  - llm: "*"
+    authorization:
+      pre_invocation:
+        - "deny('model is not permitted', 'model_not_allowed')"
+    response:
+      status: 403
+      body: "{\"error\":{\"message\":\"model is not permitted\",\"type\":\"policy_violation\",\"code\":\"model_not_allowed\"}}"
+      headers:
+        X-Authz-Denied: "model-not-allowed"

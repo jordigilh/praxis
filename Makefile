@@ -354,7 +354,7 @@ fmt:
 	cargo +$(NIGHTLY_VERSION) fmt --all
 
 doc:
-	RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --document-private-items
+	RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --document-private-items --all-features
 
 audit:
 	cargo audit

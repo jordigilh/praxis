@@ -58,12 +58,8 @@ pub(crate) struct PolicyFilterConfig {
     #[serde(default = "default_init_timeout_secs")]
     pub init_timeout_secs: u64,
 
-    /// Maximum request/response body bytes buffered in `ReadWrite`
-    /// mode. `ReadWrite` uses `StreamBuffer` to accumulate the whole
-    /// body before APL field mutators run; without a cap an oversized
-    /// payload could exhaust memory. Ignored in `ReadOnly` mode, which
-    /// streams. The pipeline rejects an unbounded buffer at config
-    /// load, so this always carries a concrete ceiling.
+    /// Maximum request or response body size in `ReadWrite` mode.
+    /// Also used as the default inference request limit.
     #[serde(default = "default_max_buffer_bytes")]
     pub max_buffer_bytes: usize,
 
@@ -88,10 +84,8 @@ pub(crate) struct PolicyFilterConfig {
     /// traffic through the `policy` filter for identity-only
     /// enforcement (legacy behavior).
     ///
-    /// Only consulted when the loaded policy declares entity routes
-    /// (tool/prompt/resource). A pure-L7 (`global`-only) or identity-only
-    /// policy never reaches this gate — `on_request_body` returns
-    /// `BodyDone` before it, so the flag has no effect there.
+    /// Only applies to policies with MCP entity routes. Inference routes
+    /// use their own gates instead.
     ///
     /// JSON-RPC methods that legitimately carry no entity (e.g.
     /// `tools/list`, `initialize`, `prompts/list`) still pass —
@@ -99,11 +93,91 @@ pub(crate) struct PolicyFilterConfig {
     /// missing entirely.
     #[serde(default = "default_true")]
     pub require_protocol_metadata: bool,
+
+    /// Inference authorization options.
+    #[serde(default)]
+    pub llm: LlmOptions,
 }
 
 /// Default for `require_protocol_metadata`.
 fn default_true() -> bool {
     true
+}
+
+// -----------------------------------------------------------------------------
+// LlmOptions
+// -----------------------------------------------------------------------------
+
+/// Inference authorization options for `llm:` routes.
+///
+/// ```yaml
+/// llm:
+///   require_model: true
+///   provider: openai
+///   # Replaces the default list; name every field a rule reads.
+///   promote_params: [stream, max_tokens]
+/// ```
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LlmOptions {
+    /// Maximum buffered inference request size, in bytes.
+    /// Requests over this limit receive HTTP 413.
+    #[serde(default = "default_llm_max_request_bytes")]
+    pub max_request_bytes: usize,
+
+    /// Top-level scalar fields promoted to `custom.llm.<name>`.
+    /// A configured list replaces the defaults.
+    #[serde(default = "default_promote_params")]
+    pub promote_params: Vec<String>,
+
+    /// Operator-supplied provider recorded on `llm.provider`.
+    #[serde(default)]
+    pub provider: Option<String>,
+
+    /// Deny a request whose body carries no usable top-level `model`.
+    ///
+    /// Enabled by default. When disabled, the request falls through to
+    /// other policy paths.
+    #[serde(default = "default_true")]
+    pub require_model: bool,
+
+    /// Deny a model no `llm:` route selects.
+    ///
+    /// Enabled by default. Disable only to admit unlisted models.
+    #[serde(default = "default_true")]
+    pub require_route: bool,
+}
+
+impl Default for LlmOptions {
+    fn default() -> Self {
+        Self {
+            max_request_bytes: default_llm_max_request_bytes(),
+            promote_params: default_promote_params(),
+            provider: None,
+            require_model: true,
+            require_route: true,
+        }
+    }
+}
+
+/// Return the default inference request limit.
+fn default_llm_max_request_bytes() -> usize {
+    default_max_buffer_bytes()
+}
+
+/// Return the default promoted inference parameters.
+fn default_promote_params() -> Vec<String> {
+    [
+        "stream",
+        "max_tokens",
+        "max_completion_tokens",
+        "temperature",
+        "top_p",
+        "n",
+    ]
+    .iter()
+    .map(|s| (*s).to_owned())
+    .collect()
 }
 
 /// Default upper bound on `PolicyEngine::initialize` (seconds).
