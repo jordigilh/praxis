@@ -6,7 +6,6 @@
 #![expect(
     clippy::arithmetic_side_effects,
     clippy::as_conversions,
-    clippy::missing_assert_message,
     clippy::missing_docs_in_private_items,
     clippy::min_ident_chars,
     clippy::needless_for_each,
@@ -61,6 +60,11 @@ const _: () = assert!(
 );
 
 /// Keep the rejection clock's wrap no longer than one token refill interval.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "RATE is a positive benchmark constant; zero is clamped to one nanosecond below"
+)]
 const REJECTION_CLOCK_MODULUS_NANOS: u64 = {
     let rate_interval_nanos = (1_000_000_000.0 / RATE) as u64;
     if rate_interval_nanos == 0 {
