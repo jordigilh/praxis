@@ -244,7 +244,9 @@ fn assert_connection_dropped(proxy_port: u16) {
     stream
         .set_read_timeout(Some(Duration::from_secs(5)))
         .expect("set read timeout");
-    stream.write_all(b"data").expect("TCP write failed");
+    stream
+        .write_all(b"plain-preamble")
+        .expect("TCP write failed");
 
     let mut buf = Vec::new();
     let read = stream.read_to_end(&mut buf);
